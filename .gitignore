@@ -1,2 +1,5 @@
 *~
 *.class
+*.java
+!Main.java
+minijava-jtb.jj
