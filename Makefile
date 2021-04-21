@@ -4,6 +4,6 @@ all:
 	javac Main.java
 
 clean:
-	rm -f sytaxtree/ visitor/ *~ *.class JavaCharStream.java  Mini*.java ParseException.java Token*.java minijava-jtb.jj
+	rm -rf syntaxtree/ visitor/ *~ *.class JavaCharStream.java  Mini*.java ParseException.java Token*.java minijava-jtb.jj
 
 .PHONY: all clean

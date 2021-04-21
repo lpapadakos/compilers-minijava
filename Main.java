@@ -12,17 +12,19 @@ public class Main {
 			System.exit(1);
 		}
 
+		FileInputStream input = null;
 		for (String file: args) {
-			FileInputStream input = null;
-
 			try {
+				String basename = file.substring(file.lastIndexOf('/') + 1);
+				System.out.println(String.format("%-80s", basename).replace(' ', '=').replaceFirst("=", " "));
+
 				input = new FileInputStream(file);
 				Goal root = new MiniJavaParser(input).Goal();
 
 				System.out.println("Apparently, this program was parsed correctly... Huh.");
 
 				// TODO: this is where visitor stuff would go
-			} catch(Exception e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {
 				try {
@@ -34,4 +36,8 @@ public class Main {
 			}
 		}
 	}
+}
+
+class SemanticVisitor extends GJDepthFirst<String, String> {
+
 }
