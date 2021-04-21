@@ -12,28 +12,24 @@ public class Main {
 			System.exit(1);
 		}
 
-		FileInputStream input = null;
-		for (String file: args) {
-			try {
-				String basename = file.substring(file.lastIndexOf('/') + 1);
-				System.out.println(String.format("%-80s", basename).replace(' ', '=').replaceFirst("=", " "));
+		for (String filename: args) {
+			String basename = filename.substring(filename.lastIndexOf('/') + 1);
+			System.out.println(String.format("%-80s", basename).replace(' ', '=').replaceFirst("=", " "));
 
-				input = new FileInputStream(file);
+			try (FileInputStream input = new FileInputStream(filename)) {
 				Goal root = new MiniJavaParser(input).Goal();
 
+				//DEBUG
 				System.out.println("Apparently, this program was parsed correctly... Huh.");
 
-				// TODO: this is where visitor stuff would go
+				// TODO: Dunno what's happening
+				SemanticVisitor v = new SemanticVisitor();
+				root.accept(v, "");
 			} catch (Exception e) {
 				e.printStackTrace();
-			} finally {
-				try {
-					if (input != null)
-						input.close();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
 			}
+
+			System.out.println();
 		}
 	}
 }
