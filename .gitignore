@@ -2,4 +2,5 @@
 *.class
 *.java
 !Main.java
+!SemanticVisitor.java
 minijava-jtb.jj

@@ -3,8 +3,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import syntaxtree.*;
-import visitor.*;
-
 public class Main {
 	public static void main(String[] args) throws Exception {
 		if (args.length < 1) {
@@ -32,8 +30,4 @@ public class Main {
 			System.out.println();
 		}
 	}
-}
-
-class SemanticVisitor extends GJDepthFirst<String, String> {
-
 }
