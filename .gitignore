@@ -1,7 +1,14 @@
-minijava-jtb.jj
+# Built files
 *~
 *.class
-*.java
-!Main.java
-!mj_visitor/*
-!symbol_table/*
+
+# JTB
+minijava-jtb.jj
+syntaxtree/
+visitor/
+
+# JavaCC
+JavaCharStream.java
+Mini*.java
+ParseException.java
+Token*.java
