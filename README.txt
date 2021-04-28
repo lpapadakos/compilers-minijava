@@ -9,4 +9,7 @@ $ make
 $ java Main <inputFile1> <inputfile2> ... <inputFileN>
 
 Σημειώσεις:
-Απαιτείται τουλάχιστον η έκδοση 7 της Java (πχ για try-with-resources)
+
+* Απαιτείται τουλάχιστον η έκδοση 7 της Java (πχ. για το try-with-resources).
+
+* Το minijava.jj είναι η δοθείσα έκδοση, χωρίς μεταβολές.

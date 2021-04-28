@@ -1,6 +1,7 @@
+minijava-jtb.jj
 *~
 *.class
 *.java
 !Main.java
-!SemanticVisitor.java
-minijava-jtb.jj
+!mj_visitor/*
+!symbol_table/*

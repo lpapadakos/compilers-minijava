@@ -1,10 +1,11 @@
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 import syntaxtree.*;
+import symbol_table.*;
+import mj_visitor.*;
+
 public class Main {
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		if (args.length < 1) {
 			System.err.println("You need to pass arguments like so: <inputFile1> <inputfile2> ... <inputFileN>");
 			System.exit(1);
@@ -20,9 +21,10 @@ public class Main {
 				//DEBUG
 				System.out.println("Apparently, this program was parsed correctly... Huh.");
 
-				// TODO: Dunno what's happening
-				SemanticVisitor v = new SemanticVisitor();
-				root.accept(v, "");
+				SymbolTable sTable = new SymbolTable();
+
+				//TypeNameVisitor firstPhase = new TypeNameVisitor(sTable);
+				//root.accept(firstPhase, null);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
