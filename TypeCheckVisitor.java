@@ -1,8 +1,6 @@
-import java.util.HashSet;
-inport visitor.*;
+import syntaxtree.*;
+import visitor.*;
 
 public class TypeCheckVisitor extends GJDepthFirst<String, String> {
-	private HashSet classNames;
-
-
+	//TODO AF
 }

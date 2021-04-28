@@ -1,5 +1,5 @@
 public class TypeCheckException extends Exception {
-	public TypeCheckException() {
-		super();
+	public TypeCheckException(String msg) {
+		super(msg);
 	}
 }

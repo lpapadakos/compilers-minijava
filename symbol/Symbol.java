@@ -1,7 +1,7 @@
-package symbol_table;
+package symbol;
 
 enum Type {
-	BOOLEAN, INT, INT_ARRAY, STRING_ARRAY, METHOD, CLASS;
+	VOID, BOOLEAN, INT, INT_ARRAY, STRING_ARRAY, CLASS;
 
 	public static Type toEnum(String type) throws Exception {
 		switch(type) {
@@ -21,19 +21,13 @@ enum Type {
 			case "String[]":
 				return STRING_ARRAY;
 
-			case "method":
-				return METHOD;
-
 			case "class":
 				return CLASS;
 
 			default:
-				//TODO: Special Exception type?
-				throw new Exception('"' + type + "\" is not a valid type for MiniJava!");
+				throw new TypeCheckException('"' + type + "\" is not a valid type for MiniJava!");
 		}
 	}
-
-	//TODO basic type check?
 }
 
 public class Symbol {
@@ -61,4 +55,12 @@ public class Symbol {
 		this.type = Type.toEnum(type);
 	}
 
+	//TODO: hmm Maybe instance of or sth else?
+	public boolean hasField(String name) {
+		return false;
+	}
+
+	public void addField(Symbol field) {
+
+	}
 }

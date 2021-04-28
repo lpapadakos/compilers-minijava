@@ -1,7 +1,6 @@
-package symbol_table;
+package symbol;
 
 import java.util.*;
-import symbol_table.*;
 
 public class SymbolTable {
 	// Use LinkedHashMap to get nice indexing
@@ -13,7 +12,7 @@ public class SymbolTable {
 	}
 
 	public Type getType(String className, String methodName, String name) {
-		//Class symbol, search method if not null, e.t.c.
+		//TODO Class symbol, search method if not null, e.t.c.
 		return null;
 	}
 
@@ -21,5 +20,5 @@ public class SymbolTable {
 		classes.put(c.getName(), c);
 	}
 
-	//subtypes, make offset things happen
+	//TODO subtypes, make offset things happen
 }

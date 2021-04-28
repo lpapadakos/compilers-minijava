@@ -1,4 +1,4 @@
-package symbol_table;
+package symbol;
 
 import java.util.*;
 
@@ -14,9 +14,11 @@ public class MethodSymbol extends Symbol {
 		params.put(param.getName(), param);
 	}
 
-	public void addLocalVariable(Symbol var) {
-		localVars.put(var.getName(), var);
+	public void addField(Symbol field) {
+		localVars.put(field.getName(), field);
 	}
 
-	// TODO: Getters on demand
+	public boolean hasField(String name) {
+		return localVars.containsKey(name);
+	}
 }

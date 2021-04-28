@@ -1,7 +1,7 @@
 import java.io.FileInputStream;
 
 import syntaxtree.*;
-import symbol_table.*;
+import symbol.*;
 
 public class Main {
 	public static void main(String[] args) {
