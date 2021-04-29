@@ -83,4 +83,13 @@ public class ClassSymbol extends Symbol {
 		// Functions are the same, which means overriding
 		return false;
 	}
+
+	public boolean isSubclassOf(ClassSymbol ancestor) {
+		if (parent == null)
+			return false;
+		else if (parent.equals(ancestor))
+			return true;
+		else
+			return parent.isSubclassOf(ancestor);
+	}
 }

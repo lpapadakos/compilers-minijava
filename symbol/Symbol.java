@@ -9,7 +9,7 @@ public class Symbol {
 		this.name = name;
 
 		//DEBUG
-		System.out.println("New symbol \"" + type + ' ' + name + '"');
+		//System.out.println("New symbol \"" + type + ' ' + name + '"');
 	}
 
 	public String getName() {
@@ -20,7 +20,7 @@ public class Symbol {
 		return type;
 	}
 
-	public boolean hasBasicType() {
+	public static boolean isBasicType(String type) {
 		switch(type) {
 			case "boolean":
 			case "int":

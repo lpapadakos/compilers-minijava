@@ -66,7 +66,6 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 
 		ClassSymbol newClass = new ClassSymbol(className);
 
-		// TODO how to handle multiple declarations?
 		if (n.f3.present())
 			n.f3.accept(this, newClass);
 
@@ -104,7 +103,7 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		ClassSymbol parentClass = symbols.getClassSymbol(parentName);
 		ClassSymbol newClass = new ClassSymbol(className, parentClass);
 
-		if (n.f5. present())
+		if (n.f5.present())
 			n.f5.accept(this, newClass);
 
 		if (n.f6.present())
@@ -172,10 +171,10 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 
 		MethodSymbol newMethod = new MethodSymbol(methodType, methodName);
 
-		if(n.f4.present())
+		if (n.f4.present())
 			n.f4.accept(this, newMethod);
 
-		if(n.f7.present())
+		if (n.f7.present())
 			n.f7.accept(this, newMethod);
 
 		if (!(argu instanceof ClassSymbol))
@@ -213,6 +212,8 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 
 		return null;
 	}
+
+	//TODO Statements
 
 	/**
 	 * f0 -> "int"

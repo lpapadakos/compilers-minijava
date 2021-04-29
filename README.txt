@@ -8,8 +8,14 @@
 $ make
 $ java Main <inputFile1> <inputfile2> ... <inputFileN>
 
+Για καθαρισμό:
+$ make clean
+
 Σημειώσεις:
 
 * Απαιτείται τουλάχιστον η έκδοση 7 της Java (πχ. για το try-with-resources).
 
 * Το minijava.jj είναι η δοθείσα έκδοση, χωρίς μεταβολές.
+
+* To make αναμένει τα javacc5.jar και jtb132di.jar στον ίδιο φάκελο με το
+Makefile (στη ρίζα του project δηλαδή)

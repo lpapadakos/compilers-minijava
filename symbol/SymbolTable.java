@@ -5,7 +5,7 @@ import java.util.*;
 public class SymbolTable {
 	// Use LinkedHashMap to get nice indexing
 	private Map<String, ClassSymbol> classes = new LinkedHashMap<>();
-	// TODO: offsets or sth
+	// TODO: offsets
 
 	public void addClass(ClassSymbol c) {
 		classes.put(c.getName(), c);
@@ -19,10 +19,16 @@ public class SymbolTable {
 		return classes.get(name);
 	}
 
-	public Type getType(String className, String methodName, String name) {
-		//TODO Class symbol, search method if not null, e.t.c.
-		return null;
+	public boolean isSubclass(String c, String ancestor) {
+		if (!hasClass(c) || !hasClass(ancestor))
+			return false;
+
+		return getClassSymbol(c).isSubclassOf(getClassSymbol(ancestor));
 	}
 
-	//TODO subtypes, make offset things happen
+	//TODO subtypes, make offset things happen (on demand.. we'll see)
+	/* public String getType(String className, String methodName, String name) {
+		//TODO Class symbol, search method if not null, e.t.c.
+		return null;
+	} */
 }

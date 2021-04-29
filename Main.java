@@ -16,9 +16,8 @@ public class Main {
 			System.out.println(String.format("%-80s", basename).replace(' ', '=').replaceFirst("=", " "));
 
 			try (FileInputStream input = new FileInputStream(filename)) {
-				/* Parsing */
+				/* Parsing: Make AST */
 				Goal root = new MiniJavaParser(input).Goal();
-				System.out.println("Parsing was successful.");
 
 				/* Semantic Checking Phase 1: Populate Symbol Table */
 				SymbolTable symbols = new SymbolTable();
@@ -26,9 +25,9 @@ public class Main {
 				SymbolVisitor firstPhase = new SymbolVisitor(symbols);
 				root.accept(firstPhase, null);
 
-				/* TODO: Semantic Checking Phase 2: Type checking, using Symbol Table (probably?)
-				SymbolVisitor firstPhase = new SymbolVisitor(symbols);
-				root.accept(firstPhase, null); */
+				/* Semantic Checking Phase 2: Type checking, using Symbol Table */
+				TypeCheckVisitor secondPhase = new TypeCheckVisitor(symbols);
+				root.accept(secondPhase, null);
 
 				/* TODO: Print offsets */
 			} catch (Exception e) {
