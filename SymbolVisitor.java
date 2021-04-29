@@ -62,10 +62,11 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		String className = n.f1.accept(this, argu);
 
 		if (symbols.hasClass(className))
-			throw new TypeCheckException("Redefinition of class " + className + "!");
+			throw new TypeCheckException("Redefinition of class " + className);
 
 		ClassSymbol newClass = new ClassSymbol(className);
 
+		// TODO how to handle multiple declarations?
 		if (n.f3.present())
 			n.f3.accept(this, newClass);
 
@@ -92,17 +93,18 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		String className = n.f1.accept(this, argu);
 
 		if (symbols.hasClass(className))
-			throw new TypeCheckException("Redefinition of class " + className + "!");
+			throw new TypeCheckException("Redefinition of class " + className);
 
 		String parentName = n.f3.accept(this, argu);
 
 		/* In MiniJava, a class has to be defined before a subclass */
 		if (!symbols.hasClass(parentName))
-			throw new TypeCheckException("class " + className + " extends " + parentName + ", but " + parentName + " has not been defined!");
+			throw new TypeCheckException("class " + className + " extends " + parentName + ", but " + parentName + " has not been defined");
 
-		ClassSymbol newClass = new ClassSymbol(className, parentName);
+		ClassSymbol parentClass = symbols.getClassSymbol(parentName);
+		ClassSymbol newClass = new ClassSymbol(className, parentClass);
 
-		if (n.f5.present())
+		if (n.f5. present())
 			n.f5.accept(this, newClass);
 
 		if (n.f6.present())
@@ -121,23 +123,123 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 	*/
 	@Override
 	public String visit(VarDeclaration n, Symbol argu) throws Exception {
-		String _ret=null;
-
 		String varType = n.f0.accept(this, argu);
 		String varName = n.f1.accept(this, argu);
 
-		if (argu.hasField(varName))
-			throw new TypeCheckException("Variable " + varName + " redefined in " + argu.getType().toString().toLowerCase() + " " + argu.getName() + "!");
-
 		Symbol newVar = new Symbol(varType, varName);
-		argu.addField(newVar);
+
+		//TODO could we avoid duplication?
+		if (argu instanceof ClassSymbol) {
+			ClassSymbol argClass = (ClassSymbol) argu;
+
+			if (argClass.hasField(varName))
+				throw new TypeCheckException("Variable " + varName + " redefined in class " + argu.getName());
+
+			argClass.addField(newVar);
+		} else if (argu instanceof MethodSymbol) {
+			MethodSymbol argMethod = (MethodSymbol) argu;
+
+			if (argMethod.hasField(varName))
+				throw new TypeCheckException("Variable " + varName + " redefined in method " + argu.getName());
+
+			argMethod.addField(newVar);
+		} else {
+			throw new TypeCheckException("Trying to visit VarDeclaration outside of <ClassSymbol, MethodSymbol>");
+		}
 
 		return null;
 	}
 
-	//TODO continue from here
+	/**
+	 * f0 -> "public"
+	 * f1 -> Type()
+	 * f2 -> Identifier()
+	 * f3 -> "("
+	 * f4 -> ( FormalParameterList() )?
+	 * f5 -> ")"
+	 * f6 -> "{"
+	 * f7 -> ( VarDeclaration() )*
+	 * f8 -> ( Statement() )*
+	 * f9 -> "return"
+	 * f10 -> Expression()
+	 * f11 -> ";"
+	 * f12 -> "}"
+	*/
+	@Override
+	public String visit(MethodDeclaration n, Symbol argu) throws Exception {
+		String methodType = n.f1.accept(this, argu);
+		String methodName = n.f2.accept(this, argu);
 
-	//TODO: this or f1.f0?
+		MethodSymbol newMethod = new MethodSymbol(methodType, methodName);
+
+		if(n.f4.present())
+			n.f4.accept(this, newMethod);
+
+		if(n.f7.present())
+			n.f7.accept(this, newMethod);
+
+		if (!(argu instanceof ClassSymbol))
+			throw new TypeCheckException("Trying to visit MethodDeclaration outside of ClassSymbol");
+
+		ClassSymbol argClass = (ClassSymbol) argu;
+		if (argClass.isOverload(newMethod))
+			throw new TypeCheckException("Attempt to overload method " + methodName + " in class " + argu.getName());
+
+		argClass.addMethod(newMethod);
+
+		return null;
+	}
+
+	/**
+	* f0 -> Type()
+	* f1 -> Identifier()
+	*/
+	@Override
+	public String visit(FormalParameter n, Symbol argu) throws Exception {
+		String paramType = n.f0.accept(this, argu);
+		String paramName = n.f1.accept(this, argu);
+
+		Symbol newParam = new Symbol(paramType, paramName);
+
+		if (!(argu instanceof MethodSymbol))
+			throw new TypeCheckException("Trying to visit FormalParameter outside of MethodSymbol");
+
+		MethodSymbol argMethod = (MethodSymbol) argu;
+
+		if (argMethod.hasParameter(paramName))
+			throw new TypeCheckException("Parameter " + paramName + " redeclared in method " + argu.getName());
+
+		argMethod.addParameter(newParam);
+
+		return null;
+	}
+
+	/**
+	 * f0 -> "int"
+	 * f1 -> "["
+	 * f2 -> "]"
+	*/
+	@Override
+	public String visit(ArrayType n, Symbol argu) throws Exception {
+		return n.f0.toString() + n.f1.toString() + n.f2.toString();
+	}
+
+	/**
+	 * f0 -> "boolean"
+	*/
+	@Override
+	public String visit(BooleanType n, Symbol argu) throws Exception {
+		return n.f0.toString();
+	}
+
+	/**
+	 * f0 -> "int"
+	*/
+	@Override
+	public String visit(IntegerType n, Symbol argu) throws Exception {
+		return n.f0.toString();
+	}
+
 	/**
 	 * f0 -> <IDENTIFIER>
 	 */

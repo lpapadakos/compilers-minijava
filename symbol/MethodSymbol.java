@@ -18,7 +18,15 @@ public class MethodSymbol extends Symbol {
 		localVars.put(field.getName(), field);
 	}
 
+	public boolean hasParameter(String name) {
+		return params.containsKey(name);
+	}
+
 	public boolean hasField(String name) {
 		return localVars.containsKey(name);
+	}
+
+	public List<Symbol> getParameters() {
+		return new ArrayList<>(params.values());
 	}
 }
