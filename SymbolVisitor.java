@@ -62,7 +62,7 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		String className = n.f1.accept(this, argu);
 
 		if (symbols.hasClass(className))
-			throw new TypeCheckException("Redefinition of class " + className);
+			throw new TypeCheckException(className, "Redefinition of existing class");
 
 		ClassSymbol newClass = new ClassSymbol(className);
 
@@ -92,13 +92,13 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		String className = n.f1.accept(this, argu);
 
 		if (symbols.hasClass(className))
-			throw new TypeCheckException("Redefinition of class " + className);
+			throw new TypeCheckException(className, "Redefinition of existing class");
 
 		String parentName = n.f3.accept(this, argu);
 
 		/* In MiniJava, a class has to be defined before a subclass */
 		if (!symbols.hasClass(parentName))
-			throw new TypeCheckException("class " + className + " extends " + parentName + ", but " + parentName + " has not been defined");
+			throw new TypeCheckException(className, "Parent class " + parentName + " has not been defined");
 
 		ClassSymbol parentClass = symbols.getClassSymbol(parentName);
 		ClassSymbol newClass = new ClassSymbol(className, parentClass);
@@ -135,14 +135,14 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		/* Duplicate variable */
 		//TODO maybe it's ok if redefined in parent
 		if (argContainer.hasField(varName))
-			throw new TypeCheckException("Variable " + varName + " redefined in " + argu.getType() + ' ' + argu.getName());
+			throw new TypeCheckException(argu.getName(), "Redefinition of variable " + varName);
 
 		if (argu instanceof MethodSymbol) {
 			MethodSymbol argMethod = (MethodSymbol) argu;
 
 			/* Conflict with method parameter */
 			if (argMethod.hasParameter(varName))
-				throw new TypeCheckException("Variable " + varName + " already defined as argument in method " + argu.getName());
+				throw new TypeCheckException(argu.getName(), "Name conflict with existing method parameter " + varName);
 		}
 
 		argContainer.addField(newVar);
@@ -184,7 +184,7 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		ClassSymbol argClass = (ClassSymbol) argu;
 
 		if (argClass.isOverload(newMethod))
-			throw new TypeCheckException("Attempt to overload method " + methodName + "() in class " + argu.getName());
+			throw new TypeCheckException(argClass.getName(), newMethod.getName(), "Attempt to overload method");
 
 		argClass.addMethod(newMethod);
 
@@ -208,7 +208,7 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		MethodSymbol argMethod = (MethodSymbol) argu;
 
 		if (argMethod.hasParameter(paramName))
-			throw new TypeCheckException("Parameter " + paramName + " redeclared in method " + argu.getName() + "()");
+			throw new TypeCheckException(argu.getName(), "Redeclaration of parameter " + paramName);
 
 		argMethod.addParameter(newParam);
 

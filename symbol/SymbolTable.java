@@ -20,7 +20,7 @@ public class SymbolTable {
 	}
 
 	public boolean isValidType(String type) {
-		return (Symbol.isBasicType(type) || hasClass(type));
+		return (Symbol.hasBasicType(type) || hasClass(type));
 	}
 
 	public boolean isSubclass(String c, String ancestor) {

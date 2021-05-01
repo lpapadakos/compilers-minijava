@@ -7,9 +7,6 @@ public class Symbol {
 	public Symbol(String type, String name) {
 		this.type = type;
 		this.name = name;
-
-		//DEBUG
-		//System.out.println("New symbol \"" + type + ' ' + name + '"');
 	}
 
 	public String getName() {
@@ -20,7 +17,15 @@ public class Symbol {
 		return type;
 	}
 
-	public static boolean isBasicType(String type) {
+	public boolean hasType(String type) {
+		return getType().equals(type);
+	}
+
+	public boolean sameTypeAs(Symbol s) {
+		return hasType(s.getType());
+	}
+
+	public static boolean hasBasicType(String type) {
 		switch(type) {
 			case "boolean":
 			case "int":

@@ -13,11 +13,11 @@ public class MethodSymbol extends FieldContainerSymbol {
 		params.put(param.getName(), param);
 	}
 
-	public boolean hasParameter(String name) {
-		return params.containsKey(name);
-	}
-
 	public List<Symbol> getParameters() {
 		return new ArrayList<>(params.values());
+	}
+
+	public boolean hasParameter(String name) {
+		return params.containsKey(name);
 	}
 }

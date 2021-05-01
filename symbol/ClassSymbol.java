@@ -14,7 +14,7 @@ public class ClassSymbol extends FieldContainerSymbol {
 	}
 
 	// ClassDeclaration
-	public ClassSymbol(String name) throws Exception{
+	public ClassSymbol(String name) throws Exception {
 		this(name, null);
 	}
 
@@ -23,10 +23,6 @@ public class ClassSymbol extends FieldContainerSymbol {
 	}
 
 	/* These 3 recurse up the inheritance tree to locate a field or function */
-	public boolean hasMethod(String name) {
-		return (getMethod(name) != null);
-	}
-
 	@Override
 	public Symbol getField(String name) {
 		Symbol field = super.getField(name);
@@ -50,8 +46,13 @@ public class ClassSymbol extends FieldContainerSymbol {
 			return parent.getMethod(name);
 	}
 
+	public boolean hasMethod(String name) {
+		return (getMethod(name) != null);
+	}
+
 	/* isOverload() is used only during the initial filling of the Symbol Table,
 	 * to determine if function overload is occurring (illegal in MiniJava) */
+	//TODO maybe global with classname
 	public boolean isOverload(MethodSymbol method) {
 		/* This depends on the recursive definition of getMethod() */
 		MethodSymbol candidate = getMethod(method.getName());
@@ -65,7 +66,7 @@ public class ClassSymbol extends FieldContainerSymbol {
 
 		/* At this point the method was found in a parent class.
 		 * Compare signature to see if we're overloading or not */
-		if (!(method.getType().equals(candidate.getType())))
+		if (!method.sameTypeAs(candidate))
 			return true;
 
 		List<Symbol> methodParams = method.getParameters();
@@ -75,7 +76,7 @@ public class ClassSymbol extends FieldContainerSymbol {
 			return true;
 
 		for (int i = 0; i < methodParams.size(); ++i) {
-			if (!(methodParams.get(i).getType().equals(candidateParams.get(i).getType())))
+			if (!methodParams.get(i).sameTypeAs(candidateParams.get(i)))
 				return true;
 		}
 

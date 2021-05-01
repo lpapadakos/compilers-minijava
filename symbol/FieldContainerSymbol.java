@@ -14,11 +14,11 @@ public abstract class FieldContainerSymbol extends Symbol {
 		fields.put(field.getName(), field);
 	}
 
-	public boolean hasField(String name) {
-		return (getField(name) != null);
-	}
-
 	public Symbol getField(String name) {
 		return fields.get(name);
+	}
+
+	public boolean hasField(String name) {
+		return (getField(name) != null);
 	}
 }
