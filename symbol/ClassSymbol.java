@@ -3,15 +3,12 @@ package symbol;
 
 import java.util.*;
 
-public class ClassSymbol extends Symbol {
+public class ClassSymbol extends FieldContainerSymbol {
 	private ClassSymbol parent;           /* MiniJava: Single Inheritance */
-	private Map<String, Symbol> fields = new LinkedHashMap<>();
 	private Map<String, MethodSymbol> methods = new LinkedHashMap<>();
 
 	// ClassExtendsDeclaration
 	public ClassSymbol(String name, ClassSymbol parent) throws Exception {
-		// TODO maybe type null for non basic types?
-		// TODO inline initialization vs here
 		super("class", name);
 		this.parent = parent;
 	}
@@ -21,50 +18,53 @@ public class ClassSymbol extends Symbol {
 		this(name, null);
 	}
 
-	public void addField(Symbol field) {
-		fields.put(field.getName(), field);
-	}
-
 	public void addMethod(MethodSymbol method) {
 		methods.put(method.getName(), method);
 	}
 
-	//TODO: Change to get == null?
-	public boolean hasField(String name) {
-		return fields.containsKey(name);
+	/* These 3 recurse up the inheritance tree to locate a field or function */
+	public boolean hasMethod(String name) {
+		return (getMethod(name) != null);
 	}
 
-	public boolean hasMethod(String name) {
-		return methods.containsKey(name);
+	@Override
+	public Symbol getField(String name) {
+		Symbol field = super.getField(name);
+
+		if (field != null)
+			return field;
+		else if (parent == null)
+			return null;
+		else
+			return parent.getField(name);
 	}
 
 	public MethodSymbol getMethod(String name) {
-		return methods.get(name);
-	}
+		MethodSymbol method = methods.get(name);
 
-	public boolean isOverload(MethodSymbol method) {
-		/* Can't exactly override (same signature) in the same class, so if the name exists already, it's an error */
-		if (hasMethod(method.getName()))
-			return true;
-		else if (parent == null) /* Defined for the first time in this class */
-			return false;
+		if (method != null)
+			return method;
+		else if (parent == null)
+			return null;
 		else
-			return parent.isOverloadParent(method); /* Look at parent to see if we're overloading or not */
+			return parent.getMethod(name);
 	}
 
-	private boolean isOverloadParent(MethodSymbol method) {
-		if (!hasMethod(method.getName())) {
-			if (parent == null)
-				return false;
-			else
-				return parent.isOverloadParent(method);
-		}
-
-		/* At this point, some ancestor class has defined the function by name.
-		 * If the signature matches, we're overriding in the subclass (All OK)
-		 */
+	/* isOverload() is used only during the initial filling of the Symbol Table,
+	 * to determine if function overload is occurring (illegal in MiniJava) */
+	public boolean isOverload(MethodSymbol method) {
+		/* This depends on the recursive definition of getMethod() */
 		MethodSymbol candidate = getMethod(method.getName());
 
+		if (candidate == null)
+			return false;
+
+		/* Can't exactly override (same signature) in the same class, so if the name exists already, it's an error */
+		if (methods.containsKey(method.getName()))
+			return true;
+
+		/* At this point the method was found in a parent class.
+		 * Compare signature to see if we're overloading or not */
 		if (!(method.getType().equals(candidate.getType())))
 			return true;
 
@@ -75,8 +75,7 @@ public class ClassSymbol extends Symbol {
 			return true;
 
 		for (int i = 0; i < methodParams.size(); ++i) {
-			//TODO: do parameter names matter for overloading? probably not
-			if (methodParams.get(i).getType() != candidateParams.get(i).getType())
+			if (!(methodParams.get(i).getType().equals(candidateParams.get(i).getType())))
 				return true;
 		}
 

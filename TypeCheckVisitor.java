@@ -100,7 +100,7 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 		String varType = n.f0.accept(this, argu);
 		String varName = n.f1.accept(this, argu);
 
-		if (!Symbol.isBasicType(varType) && !symbols.hasClass(varType))
+		if (!symbols.isValidType(varType))
 			throw new TypeCheckException("Type " + varType + " of variable " + varName + " is not a basic type or a defined class");
 
 		return null;
@@ -139,17 +139,13 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 			n.f8.accept(this, argu);
 
 		/* Return type of final expression */
-		//TODO ACTUALLY PICK UP f10 String exprType = n.f10.accept(this, argu);
+		//String exprType = n.f10.accept(this, argu);
+		//DEBUG
 		String exprType = methodType;
 
 		// Check if expression return type matched expected function signature
-		if (Symbol.isBasicType(exprType) && !exprType.equals(methodType)) {
-			/* Basic types need to match exactly */
+		if (!symbols.typesMatch(exprType, methodType))
 			throw new TypeCheckException("Return type mismatch in method " + argu[0] + '.' + argu[1] + ": Expected " + methodType + ", got " + exprType);
-		} else if (symbols.hasClass(exprType) && !exprType.equals(methodType) && !symbols.isSubclass(exprType, methodType)) {
-			/* Class types can match on subclass */
-			throw new TypeCheckException("Return type mismatch in method " + argu[0] + '.' + argu[1] + ": " + exprType + "is not a subclass of "+ methodType);
-		}
 
 		return null;
 	}
@@ -163,13 +159,124 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 		String paramType = n.f0.accept(this, argu);
 		String paramName = n.f1.accept(this, argu);
 
-		if (!Symbol.isBasicType(paramType) && !symbols.hasClass(paramType))
+		if (!symbols.isValidType(paramType))
 			throw new TypeCheckException("Type " + paramType + " of parameter " + paramName + " is not a basic type or a defined class");
 
 		return null;
 	}
 
-	// TODO Continue here
+	/* Statement Family */
+
+	/**
+	 * f0 -> Identifier()
+	 * f1 -> "="
+	 * f2 -> Expression()
+	 * f3 -> ";"
+	*/
+	@Override
+	public String visit(AssignmentStatement n, String[] argu) throws Exception {
+		String idName = n.f0.accept(this, argu);
+
+		String idType = symbols.getFieldType(argu[0], argu[1], idName);
+		if (idType == null)
+			throw new TypeCheckException("Variable " + idName + " used in " + argu[0] + '.' + argu[1] + "() is undefined");
+
+		String exprType = n.f2.accept(this, argu);
+		if (!symbols.typesMatch(exprType, idType))
+			throw new TypeCheckException("Type mismatch in assignment inside " + argu[0] + '.' + argu[1] + ": Expected " + idType + ", got " + exprType);
+
+		return null;
+	}
+
+	/**
+	 * f0 -> Identifier()
+	 * f1 -> "["
+	 * f2 -> Expression()
+	 * f3 -> "]"
+	 * f4 -> "="
+	 * f5 -> Expression()
+	 * f6 -> ";"
+	*/
+	@Override
+	public String visit(ArrayAssignmentStatement n, String[] argu) throws Exception {
+		String idName = n.f0.accept(this, argu);
+
+		String idType = symbols.getFieldType(argu[0], argu[1], idName);
+		if (!idType.equals("int[]"))
+			throw new TypeCheckException("Array " + idName + "[] used in " + argu[0] + '.' + argu[1] + "() is not of type int[]");
+
+		String indexType = n.f2.accept(this, argu);
+		if (!indexType.equals("int"))
+			throw new TypeCheckException("Indexing expression for array " + idName + "[], used in " + argu[0] + '.' + argu[1] + "() is not of type int");
+
+		String exprType = n.f5.accept(this, argu);
+		if (!exprType.equals("int"))
+			throw new TypeCheckException("Expression assigned to array " + idName + "[], used in " + argu[0] + '.' + argu[1] + "() is not of type int");
+
+		return null;
+	}
+
+	/**
+	 * f0 -> "if"
+	 * f1 -> "("
+	 * f2 -> Expression()
+	 * f3 -> ")"
+	 * f4 -> Statement()
+	 * f5 -> "else"
+	 * f6 -> Statement()
+	*/
+	@Override
+	public String visit(IfStatement n, String[] argu) throws Exception {
+		String exprType = n.f2.accept(this, argu);
+		if (!exprType.equals("boolean"))
+			throw new TypeCheckException("Expression used as \"if\" condition in " + argu[0] + '.' + argu[1] + "() is not of type boolean");
+
+		n.f4.accept(this, argu);
+		n.f6.accept(this, argu);
+
+		return null;
+	}
+
+	/**
+	 * f0 -> "while"
+	 * f1 -> "("
+	 * f2 -> Expression()
+	 * f3 -> ")"
+	 * f4 -> Statement()
+	*/
+	@Override
+	public String visit(WhileStatement n, String[] argu) throws Exception {
+		String exprType = n.f2.accept(this, argu);
+		if (!exprType.equals("boolean"))
+			throw new TypeCheckException("Expression used as \"while\" condition in " + argu[0] + '.' + argu[1] + "() is not of type boolean");
+
+		n.f4.accept(this, argu);
+
+		return null;
+	}
+
+	/**
+	 * f0 -> "System.out.println"
+	 * f1 -> "("
+	 * f2 -> Expression()
+	 * f3 -> ")"
+	 * f4 -> ";"
+	*/
+	@Override
+	public String visit(PrintStatement n, String[] argu) throws Exception {
+		String exprType = n.f2.accept(this, argu);
+		if (!exprType.equals("int"))
+			throw new TypeCheckException("Expression to be printed in " + argu[0] + '.' + argu[1] + "() is not of type int");
+
+		return null;
+	}
+
+	/* Expression Family */
+
+
+
+	//TODO line numbers?
+	//TODO continue here
 
 	/**
 	 * f0 -> "("

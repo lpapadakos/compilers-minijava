@@ -113,7 +113,6 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 
 		return null;
 	}
-	//TODO: Maybe R should be Void?
 
 	/**
 	 * f0 -> Type()
@@ -127,24 +126,26 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 
 		Symbol newVar = new Symbol(varType, varName);
 
-		//TODO could we avoid duplication?
-		if (argu instanceof ClassSymbol) {
-			ClassSymbol argClass = (ClassSymbol) argu;
+		/* Abstraction ContainerSymbol covers Classes AND Methods */
+		if (!(argu instanceof FieldContainerSymbol))
+			throw new TypeCheckException("Trying to visit VarDeclaration outside of <ClassSymbol, MethodSymbol>");
 
-			if (argClass.hasField(varName))
-				throw new TypeCheckException("Variable " + varName + " redefined in class " + argu.getName());
+		FieldContainerSymbol argContainer = (FieldContainerSymbol) argu;
 
-			argClass.addField(newVar);
-		} else if (argu instanceof MethodSymbol) {
+		/* Duplicate variable */
+		//TODO maybe it's ok if redefined in parent
+		if (argContainer.hasField(varName))
+			throw new TypeCheckException("Variable " + varName + " redefined in " + argu.getType() + ' ' + argu.getName());
+
+		if (argu instanceof MethodSymbol) {
 			MethodSymbol argMethod = (MethodSymbol) argu;
 
-			if (argMethod.hasField(varName))
-				throw new TypeCheckException("Variable " + varName + " redefined in method " + argu.getName());
-
-			argMethod.addField(newVar);
-		} else {
-			throw new TypeCheckException("Trying to visit VarDeclaration outside of <ClassSymbol, MethodSymbol>");
+			/* Conflict with method parameter */
+			if (argMethod.hasParameter(varName))
+				throw new TypeCheckException("Variable " + varName + " already defined as argument in method " + argu.getName());
 		}
+
+		argContainer.addField(newVar);
 
 		return null;
 	}
@@ -181,8 +182,9 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 			throw new TypeCheckException("Trying to visit MethodDeclaration outside of ClassSymbol");
 
 		ClassSymbol argClass = (ClassSymbol) argu;
+
 		if (argClass.isOverload(newMethod))
-			throw new TypeCheckException("Attempt to overload method " + methodName + " in class " + argu.getName());
+			throw new TypeCheckException("Attempt to overload method " + methodName + "() in class " + argu.getName());
 
 		argClass.addMethod(newMethod);
 
@@ -206,14 +208,12 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		MethodSymbol argMethod = (MethodSymbol) argu;
 
 		if (argMethod.hasParameter(paramName))
-			throw new TypeCheckException("Parameter " + paramName + " redeclared in method " + argu.getName());
+			throw new TypeCheckException("Parameter " + paramName + " redeclared in method " + argu.getName() + "()");
 
 		argMethod.addParameter(newParam);
 
 		return null;
 	}
-
-	//TODO Statements
 
 	/**
 	 * f0 -> "int"
