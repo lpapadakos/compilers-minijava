@@ -20,14 +20,14 @@ public class SymbolTable {
 	}
 
 	public boolean isValidType(String type) {
-		return (Symbol.hasBasicType(type) || hasClass(type));
+		return (Symbol.isBasicType(type) || hasClass(type));
 	}
 
-	public boolean isSubclass(String c, String ancestor) {
-		if (!hasClass(c) || !hasClass(ancestor))
+	public boolean isSubclass(String derived, String base) {
+		if (!hasClass(derived) || !hasClass(base))
 			return false;
 
-		return getClassSymbol(c).isSubclassOf(getClassSymbol(ancestor));
+		return getClassSymbol(derived).isSubclassOf(getClassSymbol(base));
 	}
 
 	public boolean typesMatch(String derived, String base) {
@@ -38,18 +38,26 @@ public class SymbolTable {
 	}
 
 	public String getFieldType(String className, String methodName, String name) {
+		Symbol target = null;
+
+		if (className == null)
+			return null;
+
 		ClassSymbol c = getClassSymbol(className);
 		if (c == null)
 			return null;
 
-		MethodSymbol method = c.getMethod(methodName);
-		if (method == null)
-			return null;
-
 		/* Use nearest definition of symbol, since local variables
 		 * shadow class fields */
-		//TODO what if using parent's field in own method
-		Symbol target = method.getField(name);
+		if (methodName != null) {
+			MethodSymbol method = c.getMethod(methodName);
+			if (method != null)
+				target = method.getField(name);
+
+			if (target == null)
+				target = method.getParameter(name);
+		}
+
 		if (target == null)
 			target = c.getField(name);
 
@@ -59,5 +67,5 @@ public class SymbolTable {
 			return target.getType();
 	}
 
-	//TODO make offset things happen (on demand.. we'll see)
+	public void makeOffsetTable
 }

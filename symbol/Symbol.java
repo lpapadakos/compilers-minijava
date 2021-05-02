@@ -25,7 +25,7 @@ public class Symbol {
 		return hasType(s.getType());
 	}
 
-	public static boolean hasBasicType(String type) {
+	public static boolean isBasicType(String type) {
 		switch(type) {
 			case "boolean":
 			case "int":

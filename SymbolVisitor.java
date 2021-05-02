@@ -133,8 +133,7 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		FieldContainerSymbol argContainer = (FieldContainerSymbol) argu;
 
 		/* Duplicate variable */
-		//TODO maybe it's ok if redefined in parent
-		if (argContainer.hasField(varName))
+		if (argContainer.hasFieldLocally(varName))
 			throw new TypeCheckException(argu.getName(), "Redefinition of variable " + varName);
 
 		if (argu instanceof MethodSymbol) {

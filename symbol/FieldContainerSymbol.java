@@ -21,4 +21,10 @@ public abstract class FieldContainerSymbol extends Symbol {
 	public boolean hasField(String name) {
 		return (getField(name) != null);
 	}
+
+	/* hasFieldLocally() is used to ensure name uniqueness withing the same class.
+	 * subclasses can actually shadow parent fields */
+	public boolean hasFieldLocally(String name) {
+		return fields.containsKey(name);
+	}
 }

@@ -1,5 +1,8 @@
 import syntaxtree.*;
 import visitor.*;
+
+import java.util.StringTokenizer;
+
 import symbol.*;
 
 public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
@@ -305,12 +308,6 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 
 	/* Expression Family */
 
-	//DEBUG fake the expression type as int
-	@Override
-	public String visit(Expression n, String[] argu) throws Exception {
-		return "int";
-	}
-
 	/**
 	 * f0 -> Clause()
 	 * f1 -> "&&"
@@ -447,8 +444,191 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 		return "int";
 	}
 
+	/**
+	 * f0 -> PrimaryExpression()
+	 * f1 -> "."
+	 * f2 -> Identifier()
+	 * f3 -> "("
+	 * f4 -> ( ExpressionList() )?
+	 * f5 -> ")"
+	*/
+	@Override
+	public String visit(MessageSend n, String[] argu) throws Exception {
+		// Class name
+		String exprType = n.f0.accept(this, argu);
+
+		ClassSymbol callClass = symbols.getClassSymbol(exprType);
+		if (callClass == null)
+			throw new TypeCheckException(argu, "Attempt to call method on non-class (" + exprType + ')');
+
+		// Method name
+		String idName = n.f2.accept(this, argu);
+
+		// Pick up arguments
+		String argList = null;
+		if (n.f4.present())
+			argList = n.f4.accept(this, argu);
+
+		MethodSymbol classMethod = callClass.getMethod(idName);
+		if (classMethod == null)
+			throw new TypeCheckException(argu, "class " + callClass.getName() + " has no method named " + idName + "()");
+
+		// Compare temporary method construct with signature of normal class method
+		MethodSymbol callMethod = new MethodSymbol(classMethod.getType(), idName);
+
+		if (argList != null) {
+			StringTokenizer args = new StringTokenizer(argList, ",");
+			int counter = 0;       /* Used to get hashing to work */
+
+			while (args.hasMoreTokens()) {
+				String argType = args.nextToken();
+				callMethod.addParameter(new Symbol(argType, "a" + counter++));
+			}
+		}
+
+		if (!classMethod.equals(callMethod))
+			throw new TypeCheckException(argu, "Incorrect use of method " + callClass.getName() + '.' + callMethod.getName() + "()");
+
+		return callMethod.getType();
+	}
+
+	/**
+	 * f0 -> Expression()
+	 * f1 -> ExpressionTail()
+	*/
+	@Override
+	public String visit(ExpressionList n, String[] argu) throws Exception {
+		String[] argList = new String[3];
+
+		/* Carry class and method names to lowe levels of recursion as normal */
+		argList[0] = argu[0];
+		argList[1] = argu[1];
+
+		/* Append arguments types from expressions */
+		argList[2] = n.f0.accept(this, argList);
+		n.f1.accept(this, argList);
+
+		return argList[2];
+	}
+
+	/**
+	 * f0 -> ","
+	 * f1 -> Expression()
+	*/
+	@Override
+	public String visit(ExpressionTerm n, String[] argu) throws Exception {
+		argu[2] += "," + n.f1.accept(this, argu);
+		return null;
+	}
+
+	/**
+	 * f0 -> IntegerLiteral()
+	 *       | TrueLiteral()
+	 *       | FalseLiteral()
+	 *       | Identifier()
+	 *       | ThisExpression()
+	 *       | ArrayAllocationExpression()
+	 *       | AllocationExpression()
+	 *       | BracketExpression()
+	*/
+	@Override
+	public String visit(PrimaryExpression n, String[] argu) throws Exception {
+		String exprType = n.f0.accept(this, argu);
+
+		if (symbols.isValidType(exprType))
+			return exprType;
+
+		if (exprType.equals("this"))
+			return argu[0];                     /* The class name */
+
+		/* At this point, exprType is an identifier */
+		String idType = symbols.getFieldType(argu[0], argu[1], exprType);
+		if (idType == null)
+			throw new TypeCheckException(argu, "Identifier " + exprType + " is undefined");
+
+		return idType;
+	}
+
 	//TODO line numbers in msg? Low priority
-	//TODO continue here: BIG BOI MessageSend is next
+
+	/**
+	 * f0 -> <INTEGER_LITERAL>
+	*/
+	@Override
+	public String visit(IntegerLiteral n, String[] argu) throws Exception {
+		return "int";
+	}
+
+	/**
+	 * f0 -> "true"
+	*/
+	@Override
+	public String visit(TrueLiteral n, String[] argu) throws Exception {
+		return "boolean";
+	}
+
+	/**
+	 * f0 -> "false"
+	*/
+	@Override
+	public String visit(FalseLiteral n, String[] argu) throws Exception {
+		return "boolean";
+	}
+
+	/**
+	 * f0 -> "this"
+	*/
+	@Override
+	public String visit(ThisExpression n, String[] argu) throws Exception {
+		return "this";
+	}
+
+	/**
+	 * f0 -> "new"
+	 * f1 -> "int"
+	 * f2 -> "["
+	 * f3 -> Expression()
+	 * f4 -> "]"
+	*/
+	@Override
+	public String visit(ArrayAllocationExpression n, String[] argu) throws Exception {
+		String exprType = n.f3.accept(this, argu);
+
+		if (!exprType.equals("int"))
+			throw new TypeCheckException(argu, "Expression used for size of array allocation must be int");
+
+		return "int[]";
+	}
+
+	/**
+	 * f0 -> "new"
+	 * f1 -> Identifier()
+	 * f2 -> "("
+	 * f3 -> ")"
+	*/
+	@Override
+	public String visit(AllocationExpression n, String[] argu) throws Exception {
+		String className = n.f1.accept(this, argu);
+
+		if (!symbols.hasClass(className))
+			throw new TypeCheckException(argu, "Type " + className + "is not a defined class");
+
+		return className;
+	}
+
+	/**
+	 * f0 -> "!"
+	 * f1 -> Clause()
+	*/
+	@Override
+	public String visit(NotExpression n, String[] argu) throws Exception {
+		String exprType = n.f1.accept(this, argu);
+
+		if (!exprType.equals("boolean"))
+			throw new TypeCheckException(argu, "Expression used in logical \"not\" is not of type boolean");
+
+		return "boolean";
+	}
 
 	/**
 	 * f0 -> "("
@@ -459,6 +639,4 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 	public String visit(BracketExpression n, String[] argu) throws Exception {
 		return n.f1.accept(this, argu);
 	}
-
-
 }

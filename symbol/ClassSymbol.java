@@ -50,38 +50,38 @@ public class ClassSymbol extends FieldContainerSymbol {
 		return (getMethod(name) != null);
 	}
 
+	// /* This version of hasMethod() compares signatures as well */
+	// public boolean hasMethod(MethodSymbol candidate) {
+	// 	if (candidate == null)
+	// 		return false;
+
+	// 	/* This depends on the recursive definition of getMethod() */
+	// 	MethodSymbol existing = getMethod(candidate.getName());
+
+	// 	if (existing == null)
+	// 		return false;
+
+	// 	return existing.equals(candidate);
+	// }
+
 	/* isOverload() is used only during the initial filling of the Symbol Table,
 	 * to determine if function overload is occurring (illegal in MiniJava) */
-	//TODO maybe global with classname
-	public boolean isOverload(MethodSymbol method) {
-		/* This depends on the recursive definition of getMethod() */
-		MethodSymbol candidate = getMethod(method.getName());
-
+	public boolean isOverload(MethodSymbol candidate) {
 		if (candidate == null)
 			return false;
 
+		MethodSymbol existing = getMethod(candidate.getName());
+
+		if (existing == null)
+			return false;
+
 		/* Can't exactly override (same signature) in the same class, so if the name exists already, it's an error */
-		if (methods.containsKey(method.getName()))
+		if (methods.containsKey(existing.getName()))
 			return true;
 
-		/* At this point the method was found in a parent class.
-		 * Compare signature to see if we're overloading or not */
-		if (!method.sameTypeAs(candidate))
-			return true;
-
-		List<Symbol> methodParams = method.getParameters();
-		List<Symbol> candidateParams = candidate.getParameters();
-
-		if (methodParams.size() != candidateParams.size())
-			return true;
-
-		for (int i = 0; i < methodParams.size(); ++i) {
-			if (!methodParams.get(i).sameTypeAs(candidateParams.get(i)))
-				return true;
-		}
-
-		// Functions are the same, which means overriding
-		return false;
+		/* We know the names are the same.
+		 * If the signature doesn't match, overloading is occurring */
+		return !existing.equals(candidate);
 	}
 
 	public boolean isSubclassOf(ClassSymbol ancestor) {
