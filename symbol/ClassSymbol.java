@@ -6,11 +6,19 @@ import java.util.*;
 public class ClassSymbol extends FieldContainerSymbol {
 	private ClassSymbol parent;           /* MiniJava: Single Inheritance */
 	private Map<String, MethodSymbol> methods = new LinkedHashMap<>();
+	private int lastFieldOffset = 0;
+	private int lastMethodOffset = 0;
 
 	// ClassExtendsDeclaration
 	public ClassSymbol(String name, ClassSymbol parent) throws Exception {
 		super("class", name);
 		this.parent = parent;
+
+		if (parent != null) {
+			/* Resume counters from parent class */
+			lastFieldOffset = parent.getLastFieldOffset();
+			lastMethodOffset = parent.getLastMethodOffset();
+		}
 	}
 
 	// ClassDeclaration
@@ -18,7 +26,18 @@ public class ClassSymbol extends FieldContainerSymbol {
 		this(name, null);
 	}
 
+	@Override
+	public void addField(Symbol field) {
+		field.setOffset(lastFieldOffset);
+		lastFieldOffset += field.getSize();
+
+		super.addField(field);
+	}
+
 	public void addMethod(MethodSymbol method) {
+		method.setOffset(lastMethodOffset);
+		lastMethodOffset += method.getSize();
+
 		methods.put(method.getName(), method);
 	}
 
@@ -44,6 +63,10 @@ public class ClassSymbol extends FieldContainerSymbol {
 			return null;
 		else
 			return parent.getMethod(name);
+	}
+
+	public Collection<MethodSymbol> getMethods() {
+		return methods.values();
 	}
 
 	public boolean hasMethod(String name) {
@@ -91,5 +114,13 @@ public class ClassSymbol extends FieldContainerSymbol {
 			return true;
 		else
 			return parent.isSubclassOf(ancestor);
+	}
+
+	public int getLastFieldOffset() {
+		return lastFieldOffset;
+	}
+
+	public int getLastMethodOffset() {
+		return lastMethodOffset;
 	}
 }

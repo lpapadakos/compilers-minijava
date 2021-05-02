@@ -549,8 +549,6 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 		return idType;
 	}
 
-	//TODO line numbers in msg? Low priority
-
 	/**
 	 * f0 -> <INTEGER_LITERAL>
 	*/

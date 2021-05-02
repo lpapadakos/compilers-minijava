@@ -29,12 +29,13 @@ public class Main {
 				TypeCheckVisitor secondPhase = new TypeCheckVisitor(symbols);
 				root.accept(secondPhase, null);
 
-				/* TODO: Print offsets */
+				/* Print offsets */
+				symbols.printOffsets();
 			} catch (Exception e) {
 				//DEBUG whole stacktrace
 				//e.printStackTrace();
 
-				System.err.println(e.getMessage());
+				System.err.println("ERROR: " + e.getMessage());
 			}
 
 			System.out.println();

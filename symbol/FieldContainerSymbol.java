@@ -18,6 +18,10 @@ public abstract class FieldContainerSymbol extends Symbol {
 		return fields.get(name);
 	}
 
+	public Collection<Symbol> getFields() {
+		return fields.values();
+	}
+
 	public boolean hasField(String name) {
 		return (getField(name) != null);
 	}

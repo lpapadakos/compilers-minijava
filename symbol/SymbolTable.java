@@ -5,18 +5,17 @@ import java.util.*;
 public class SymbolTable {
 	// Use LinkedHashMap to get nice indexing
 	private Map<String, ClassSymbol> classes = new LinkedHashMap<>();
-	// TODO: offsets
 
 	public void addClass(ClassSymbol c) {
 		classes.put(c.getName(), c);
 	}
 
-	public boolean hasClass(String name) {
-		return (getClassSymbol(name) != null);
-	}
-
 	public ClassSymbol getClassSymbol(String name) {
 		return classes.get(name);
+	}
+
+	public boolean hasClass(String name) {
+		return (getClassSymbol(name) != null);
 	}
 
 	public boolean isValidType(String type) {
@@ -51,11 +50,12 @@ public class SymbolTable {
 		 * shadow class fields */
 		if (methodName != null) {
 			MethodSymbol method = c.getMethod(methodName);
-			if (method != null)
+			if (method != null) {
 				target = method.getField(name);
 
-			if (target == null)
-				target = method.getParameter(name);
+				if (target == null)
+					target = method.getParameter(name);
+			}
 		}
 
 		if (target == null)
@@ -67,5 +67,13 @@ public class SymbolTable {
 			return target.getType();
 	}
 
-	public void makeOffsetTable
+	public void printOffsets() {
+		for (ClassSymbol c: classes.values()) {
+			for (Symbol field: c.getFields())
+				System.out.println(c.getName() + '.' + field.getName() + " : " + field.getOffset());
+
+			for (Symbol method: c.getMethods())
+				System.out.println(c.getName() + '.' + method.getName() + " : " + method.getOffset());
+		}
+	}
 }
