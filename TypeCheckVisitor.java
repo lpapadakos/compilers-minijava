@@ -486,7 +486,7 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 			}
 		}
 
-		if (!symbols.sameMethod(classMethod, callMethod))
+		if (!symbols.compatibleCall(classMethod, callMethod))
 			throw new TypeCheckException(argu, "Incorrect use of method " + callClass.getName() + '.' + callMethod.getName() + "()");
 
 		return callMethod.getType();

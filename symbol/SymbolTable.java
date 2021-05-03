@@ -71,29 +71,7 @@ public class SymbolTable {
 			return target.getType();
 	}
 
-	public boolean isOverload(ClassSymbol c, MethodSymbol candidate) {
-		if (c == null || candidate == null)
-			return false;
-
-		/* This recursively looks up the parent chain */
-		MethodSymbol existing = c.getMethod(candidate.getName());
-
-		if (existing == null)
-			return false;
-
-		/* Can't exactly override (same signature) in the same class, so if the name exists already, it's an error */
-		if (c.hasMethodLocally(candidate.getName()))
-			return true;
-
-		/* At this point the method was found in a parent class of c.
-		 * Compare signature to see if we're overloading or not */
-		return !sameMethod(existing, candidate);
-	}
-
-	public boolean sameMethod(MethodSymbol definition, MethodSymbol call) {
-		if (!definition.sameTypeAs(call))
-			return false;
-
+	public boolean compatibleCall(MethodSymbol definition, MethodSymbol call) {
 		if (!definition.getName().equals(call.getName()))
 			return false;
 
@@ -104,11 +82,12 @@ public class SymbolTable {
 			return false;
 
 		for (int i = 0; i < callParams.size(); ++i) {
+			/* Call can pass subtype of argument type */
 			if (!typesMatch(callParams.get(i), definitionParams.get(i)))
 				return false;
 		}
 
-		// Functions are the same, which means overriding (if in the same class)
+		/* Arguments are used correctly */
 		return true;
 	}
 
@@ -117,8 +96,10 @@ public class SymbolTable {
 			for (Symbol field: c.getFields())
 				System.out.println(c.getName() + '.' + field.getName() + " : " + field.getOffset());
 
-			for (Symbol method: c.getMethods())
-				System.out.println(c.getName() + '.' + method.getName() + " : " + method.getOffset());
+			for (MethodSymbol method: c.getMethods()) {
+				if (!method.isOverride())
+					System.out.println(c.getName() + '.' + method.getName() + " : " + method.getOffset());
+			}
 		}
 	}
 }

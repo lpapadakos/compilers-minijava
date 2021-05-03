@@ -182,7 +182,7 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 
 		ClassSymbol argClass = (ClassSymbol) argu;
 
-		if (symbols.isOverload(argClass, newMethod))
+		if (argClass.isOverload(newMethod))
 			throw new TypeCheckException(argClass.getName(), newMethod.getName(), "Attempt to overload method");
 
 		argClass.addMethod(newMethod);
