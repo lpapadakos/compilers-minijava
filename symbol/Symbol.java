@@ -23,12 +23,14 @@ public class Symbol {
 	}
 
 	public int getSize() {
-		if (type.equals("boolean"))
+		if (this instanceof FieldContainerSymbol) /* Class and Method declarations */
+			return 8;
+		else if (type.equals("boolean"))
 			return 1;
 		else if (type.equals("int"))
 			return 4;
 		else
-			return 8;                 /* Other types are pointers */
+ 			return 8;              /* int[], Instances of classes */
 	}
 
 	public int getOffset() {
@@ -36,7 +38,7 @@ public class Symbol {
 	}
 
 	public boolean hasType(String type) {
-		return getType().equals(type);
+		return this.type.equals(type);
 	}
 
 	public boolean sameTypeAs(Symbol s) {

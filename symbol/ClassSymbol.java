@@ -73,38 +73,8 @@ public class ClassSymbol extends FieldContainerSymbol {
 		return (getMethod(name) != null);
 	}
 
-	// /* This version of hasMethod() compares signatures as well */
-	// public boolean hasMethod(MethodSymbol candidate) {
-	// 	if (candidate == null)
-	// 		return false;
-
-	// 	/* This depends on the recursive definition of getMethod() */
-	// 	MethodSymbol existing = getMethod(candidate.getName());
-
-	// 	if (existing == null)
-	// 		return false;
-
-	// 	return existing.equals(candidate);
-	// }
-
-	/* isOverload() is used only during the initial filling of the Symbol Table,
-	 * to determine if function overload is occurring (illegal in MiniJava) */
-	public boolean isOverload(MethodSymbol candidate) {
-		if (candidate == null)
-			return false;
-
-		MethodSymbol existing = getMethod(candidate.getName());
-
-		if (existing == null)
-			return false;
-
-		/* Can't exactly override (same signature) in the same class, so if the name exists already, it's an error */
-		if (methods.containsKey(existing.getName()))
-			return true;
-
-		/* We know the names are the same.
-		 * If the signature doesn't match, overloading is occurring */
-		return !existing.equals(candidate);
+	public boolean hasMethodLocally(String name) {
+		return methods.containsKey(name);
 	}
 
 	public boolean isSubclassOf(ClassSymbol ancestor) {

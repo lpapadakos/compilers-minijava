@@ -36,6 +36,10 @@ public class SymbolTable {
 			return isSubclass(derived, base);
 	}
 
+	public boolean typesMatch(Symbol derived, Symbol base) {
+		return typesMatch(derived.getType(), base.getType());
+	}
+
 	public String getFieldType(String className, String methodName, String name) {
 		Symbol target = null;
 
@@ -65,6 +69,47 @@ public class SymbolTable {
 			return null;
 		else
 			return target.getType();
+	}
+
+	public boolean isOverload(ClassSymbol c, MethodSymbol candidate) {
+		if (c == null || candidate == null)
+			return false;
+
+		/* This recursively looks up the parent chain */
+		MethodSymbol existing = c.getMethod(candidate.getName());
+
+		if (existing == null)
+			return false;
+
+		/* Can't exactly override (same signature) in the same class, so if the name exists already, it's an error */
+		if (c.hasMethodLocally(candidate.getName()))
+			return true;
+
+		/* At this point the method was found in a parent class of c.
+		 * Compare signature to see if we're overloading or not */
+		return !sameMethod(existing, candidate);
+	}
+
+	public boolean sameMethod(MethodSymbol definition, MethodSymbol call) {
+		if (!definition.sameTypeAs(call))
+			return false;
+
+		if (!definition.getName().equals(call.getName()))
+			return false;
+
+		List<Symbol> definitionParams = definition.getParameters();
+		List<Symbol> callParams = call.getParameters();
+
+		if (definitionParams.size() != callParams.size())
+			return false;
+
+		for (int i = 0; i < callParams.size(); ++i) {
+			if (!typesMatch(callParams.get(i), definitionParams.get(i)))
+				return false;
+		}
+
+		// Functions are the same, which means overriding (if in the same class)
+		return true;
 	}
 
 	public void printOffsets() {
