@@ -1,5 +1,4 @@
 package symbol;
-//TODO package all the things, might help with import?
 
 import java.util.*;
 
@@ -115,5 +114,15 @@ public class ClassSymbol extends FieldContainerSymbol {
 			return true;
 		else
 			return parent.isSubclassOf(ancestor);
+	}
+
+	public void printOffsets() {
+		for (Symbol field: getFields())
+			System.out.println(getName() + '.' + field.getName() + " : " + field.getOffset());
+
+		for (MethodSymbol method: methods.values()) {
+			if (!method.isOverride() && !method.getName().equals("main"))
+				System.out.println(getName() + '.' + method.getName() + "() : " + method.getOffset());
+		}
 	}
 }

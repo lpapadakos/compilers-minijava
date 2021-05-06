@@ -14,6 +14,12 @@ public abstract class FieldContainerSymbol extends Symbol {
 		fields.put(field.getName(), field);
 	}
 
+	@Override
+	public int getSize() {
+		/* Class and Method declarations are pointers in this case */
+		return 8;
+	}
+
 	public Symbol getField(String name) {
 		return fields.get(name);
 	}

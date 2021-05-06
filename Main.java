@@ -13,7 +13,8 @@ public class Main {
 		for (String filename: args) {
 			/* Pretty-print file basename */
 			String basename = filename.substring(filename.lastIndexOf('/') + 1);
-			System.out.println(String.format("%-80s", basename).replace(' ', '-').replaceFirst("-", " "));
+			System.out.println(basename);
+			System.out.println(String.format("%080d", 0).replace('0', '-'));
 
 			try (FileInputStream input = new FileInputStream(filename)) {
 				/* Parsing: Make AST */
@@ -35,7 +36,7 @@ public class Main {
 				//DEBUG whole stacktrace
 				//e.printStackTrace();
 
-				System.err.println("ERROR: " + e.getMessage());
+				System.err.println("\033[1;31mERROR\033[0m: " + e.getMessage());
 			}
 
 			System.out.println();

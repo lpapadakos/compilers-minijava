@@ -92,14 +92,7 @@ public class SymbolTable {
 	}
 
 	public void printOffsets() {
-		for (ClassSymbol c: classes.values()) {
-			for (Symbol field: c.getFields())
-				System.out.println(c.getName() + '.' + field.getName() + " : " + field.getOffset());
-
-			for (MethodSymbol method: c.getMethods()) {
-				if (!method.isOverride())
-					System.out.println(c.getName() + '.' + method.getName() + " : " + method.getOffset());
-			}
-		}
+		for (ClassSymbol c: classes.values())
+			c.printOffsets();
 	}
 }

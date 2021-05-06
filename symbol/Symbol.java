@@ -23,14 +23,16 @@ public class Symbol {
 	}
 
 	public int getSize() {
-		if (this instanceof FieldContainerSymbol) /* Class and Method declarations */
-			return 8;
-		else if (type.equals("boolean"))
-			return 1;
-		else if (type.equals("int"))
-			return 4;
-		else
- 			return 8;              /* int[], Instances of classes */
+		switch(type) {
+			case "boolean":
+				return 1;
+
+			case "int":
+				return 4;
+
+			default:               /* int[], Instances of classes */
+				return 8;
+		}
 	}
 
 	public int getOffset() {
