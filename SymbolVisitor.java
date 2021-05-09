@@ -34,7 +34,7 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		String className = n.f1.accept(this, argu);
 		ClassSymbol mainClass = new ClassSymbol(className);
 
-		MethodSymbol mainMethod = new MethodSymbol("void", "main");
+		MethodSymbol mainMethod = new MethodSymbol("static void", "main");
 
 		String paramName = n.f11.accept(this, argu);
 		Symbol mainParam = new Symbol("String[]", paramName);

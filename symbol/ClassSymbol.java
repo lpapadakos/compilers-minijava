@@ -34,7 +34,8 @@ public class ClassSymbol extends FieldContainerSymbol {
 	}
 
 	public void addMethod(MethodSymbol method) {
-		if (!method.isOverride()) {
+		/* Essentally, offset is undefined for overrides and static methods */
+		if (!method.isStatic() && !method.isOverride()) {
 			method.setOffset(lastMethodOffset);
 			lastMethodOffset += method.getSize();
 		}
@@ -121,7 +122,7 @@ public class ClassSymbol extends FieldContainerSymbol {
 			System.out.println(getName() + '.' + field.getName() + " : " + field.getOffset());
 
 		for (MethodSymbol method: methods.values()) {
-			if (!method.isOverride() && !method.getName().equals("main"))
+			if (!method.isStatic() && !method.isOverride())
 				System.out.println(getName() + '.' + method.getName() + "() : " + method.getOffset());
 		}
 	}

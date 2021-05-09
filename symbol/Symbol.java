@@ -35,8 +35,8 @@ public class Symbol {
 		}
 	}
 
-	public int getOffset() {
-		return offset;
+	public boolean isStatic() {
+		return type.startsWith("static");
 	}
 
 	public boolean hasType(String type) {
@@ -45,6 +45,10 @@ public class Symbol {
 
 	public boolean sameTypeAs(Symbol s) {
 		return hasType(s.getType());
+	}
+
+	public int getOffset() {
+		return offset;
 	}
 
 	public static boolean isBasicType(String type) {

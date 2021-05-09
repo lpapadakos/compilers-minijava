@@ -3,6 +3,7 @@ package symbol;
 import java.util.*;
 
 public class MethodSymbol extends FieldContainerSymbol {
+	private boolean override = false;
 	private Map<String, Symbol> params = new LinkedHashMap<>();
 
 	public MethodSymbol(String returnType, String name) {
@@ -10,8 +11,7 @@ public class MethodSymbol extends FieldContainerSymbol {
 	}
 
 	public void setOverride() {
-		/* Ignore offset printing for overriding methods */
-		setOffset(-1);
+		override = true;
 	}
 
 	public void addParameter(Symbol param) {
@@ -19,8 +19,7 @@ public class MethodSymbol extends FieldContainerSymbol {
 	}
 
 	public boolean isOverride() {
-		/* Ignore offset printing for overriding methods */
-		return (getOffset() == -1);
+		return override;
 	}
 
 	public Symbol getParameter(String name) {
