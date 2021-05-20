@@ -4,7 +4,7 @@ import syntaxtree.*;
 import visitor.*;
 import symbol.*;
 
-public class LLVMVisitor {
+public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 	private SymbolTable symbols;
 	private BufferedWriter ll;
 

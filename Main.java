@@ -1,4 +1,5 @@
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.nio.file.*;
@@ -13,11 +14,14 @@ public class Main {
 			System.exit(1);
 		}
 
+		String prettyLine = String.format("%080d", 0).replace('0', '-');
+		new File("output").mkdir();
+
 		for (String filename: args) {
 			/* Pretty-print file basename */
 			String basename = filename.substring(filename.lastIndexOf('/') + 1);
 			System.out.println(basename);
-			System.out.println(String.format("%080d", 0).replace('0', '-'));
+			System.out.println(prettyLine);
 
 			/* Prepare output filename, ensuring uniqueness */
 			String outname = "output/" + basename.replace(".java", "");
@@ -34,20 +38,16 @@ public class Main {
 
 				/* Semantic Checking Phase 1: Populate Symbol Table */
 				SymbolTable symbols = new SymbolTable();
-
-				SymbolVisitor firstPhase = new SymbolVisitor(symbols);
-				root.accept(firstPhase, null);
+				root.accept(new SymbolVisitor(symbols), null);
 
 				/* Semantic Checking Phase 2: Type checking, using Symbol Table */
-				TypeCheckVisitor secondPhase = new TypeCheckVisitor(symbols);
-				root.accept(secondPhase, null);
+				root.accept(new TypeCheckVisitor(symbols), null);
 
 				/* Print offsets //TODO: Is this needed for part 3 */
 				symbols.printOffsets();
 
-				// /* LLVM IR Generation */
-				LLVMVisitor codegen = new LLVMVisitor(symbols, output);
-				// TODO root.accept(codegen, null);
+				/* LLVM IR Generation */
+				root.accept(new LLVMVisitor(symbols, output), null);
 
 				System.out.println("\nLLVM IR: " + outname);
 			} catch (Exception e) {
