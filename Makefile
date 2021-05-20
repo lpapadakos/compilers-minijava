@@ -8,6 +8,6 @@ mine:
 	javac Main.java
 
 clean:
-	rm -rf syntaxtree/ visitor/ symbol/*.class *.class JavaCharStream.java  Mini*.java ParseException.java Token*.java minijava-jtb.jj
+	rm -rf output/ syntaxtree/ visitor/ symbol/*.class *.class JavaCharStream.java  Mini*.java ParseException.java Token*.java minijava-jtb.jj
 
 .PHONY: all libs mine clean

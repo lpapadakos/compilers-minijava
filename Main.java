@@ -1,4 +1,7 @@
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.nio.file.*;
 
 import syntaxtree.*;
 import symbol.*;
@@ -16,7 +19,16 @@ public class Main {
 			System.out.println(basename);
 			System.out.println(String.format("%080d", 0).replace('0', '-'));
 
-			try (FileInputStream input = new FileInputStream(filename)) {
+			/* Prepare output filename, ensuring uniqueness */
+			String outname = "output/" + basename.replace(".java", "");
+			String tail = "";
+			for (int n = 1; Files.exists(Paths.get((outname + tail + ".ll"))); ++n)
+				tail = String.valueOf(n);
+
+			outname += tail + ".ll";
+
+			try (FileInputStream input = new FileInputStream(filename);
+			     BufferedWriter output = new BufferedWriter(new FileWriter(outname))) {
 				/* Parsing: Make AST */
 				Goal root = new MiniJavaParser(input).Goal();
 
@@ -30,8 +42,14 @@ public class Main {
 				TypeCheckVisitor secondPhase = new TypeCheckVisitor(symbols);
 				root.accept(secondPhase, null);
 
-				/* Print offsets */
+				/* Print offsets //TODO: Is this needed for part 3 */
 				symbols.printOffsets();
+
+				// /* LLVM IR Generation */
+				LLVMVisitor codegen = new LLVMVisitor(symbols, output);
+				// TODO root.accept(codegen, null);
+
+				System.out.println("\nLLVM IR: " + outname);
 			} catch (Exception e) {
 				//DEBUG whole stacktrace
 				//e.printStackTrace();

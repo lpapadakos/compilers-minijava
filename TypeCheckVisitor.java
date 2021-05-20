@@ -1,8 +1,7 @@
-import syntaxtree.*;
-import visitor.*;
-
 import java.util.StringTokenizer;
 
+import syntaxtree.*;
+import visitor.*;
 import symbol.*;
 
 public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
