@@ -4,18 +4,18 @@ import java.util.*;
 
 public class SymbolTable {
 	// Use LinkedHashMap to get nice indexing
-	private Map<String, ClassSymbol> classes = new LinkedHashMap<>();
+	private final Map<String, ClassSymbol> classes = new LinkedHashMap<>();
 
 	public void addClass(ClassSymbol c) {
 		classes.put(c.getName(), c);
 	}
 
-	public ClassSymbol getClassSymbol(String name) {
+	public ClassSymbol getClass(String name) {
 		return classes.get(name);
 	}
 
 	public boolean hasClass(String name) {
-		return (getClassSymbol(name) != null);
+		return (getClass(name) != null);
 	}
 
 	public boolean isValidType(String type) {
@@ -26,7 +26,7 @@ public class SymbolTable {
 		if (!hasClass(derived) || !hasClass(base))
 			return false;
 
-		return getClassSymbol(derived).isSubclassOf(getClassSymbol(base));
+		return getClass(derived).isSubclassOf(getClass(base));
 	}
 
 	public boolean typesMatch(String derived, String base) {
@@ -46,7 +46,7 @@ public class SymbolTable {
 		if (className == null)
 			return null;
 
-		ClassSymbol c = getClassSymbol(className);
+		ClassSymbol c = getClass(className);
 		if (c == null)
 			return null;
 

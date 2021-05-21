@@ -3,7 +3,7 @@ import visitor.*;
 import symbol.*;
 
 public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
-	private SymbolTable symbols;
+	private final SymbolTable symbols;
 
 	public SymbolVisitor(SymbolTable symbols) {
 		this.symbols = symbols;
@@ -100,7 +100,7 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 		if (!symbols.hasClass(parentName))
 			throw new TypeCheckException(className, "Parent class " + parentName + " has not been defined");
 
-		ClassSymbol parentClass = symbols.getClassSymbol(parentName);
+		ClassSymbol parentClass = symbols.getClass(parentName);
 		ClassSymbol newClass = new ClassSymbol(className, parentClass);
 
 		if (n.f5.present())

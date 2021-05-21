@@ -1,8 +1,8 @@
 package symbol;
 
 public class Symbol {
-	private String type;
-	private String name;
+	private final String type;
+	private final String name;
 	private int offset;
 
 	public Symbol(String type, String name) {

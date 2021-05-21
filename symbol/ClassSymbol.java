@@ -4,7 +4,7 @@ import java.util.*;
 
 public class ClassSymbol extends FieldContainerSymbol {
 	private ClassSymbol parent;           /* MiniJava: Single Inheritance */
-	private Map<String, MethodSymbol> methods = new LinkedHashMap<>();
+	private final Map<String, MethodSymbol> methods = new LinkedHashMap<>();
 	private int lastFieldOffset = 0;
 	private int lastMethodOffset = 0;
 
@@ -33,6 +33,7 @@ public class ClassSymbol extends FieldContainerSymbol {
 		super.addField(field);
 	}
 
+	// TODO overrides should have same offset as overriden funcs?
 	public void addMethod(MethodSymbol method) {
 		/* Essentally, offset is undefined for overrides and static methods */
 		if (!method.isStatic() && !method.isOverride()) {

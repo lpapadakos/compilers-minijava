@@ -5,7 +5,7 @@ import visitor.*;
 import symbol.*;
 
 public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
-	private SymbolTable symbols;
+	private final SymbolTable symbols;
 
 	public TypeCheckVisitor(SymbolTable symbols) {
 		this.symbols = symbols;
@@ -456,7 +456,7 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 		// Class name
 		String exprType = n.f0.accept(this, argu);
 
-		ClassSymbol callClass = symbols.getClassSymbol(exprType);
+		ClassSymbol callClass = symbols.getClass(exprType);
 		if (callClass == null)
 			throw new TypeCheckException(argu, "Attempt to call method on non-class (" + exprType + ')');
 

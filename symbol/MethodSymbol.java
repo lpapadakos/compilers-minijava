@@ -4,7 +4,7 @@ import java.util.*;
 
 public class MethodSymbol extends FieldContainerSymbol {
 	private boolean override = false;
-	private Map<String, Symbol> params = new LinkedHashMap<>();
+	private final Map<String, Symbol> params = new LinkedHashMap<>();
 
 	public MethodSymbol(String returnType, String name) {
 		super(returnType, name);
