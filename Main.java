@@ -15,7 +15,9 @@ public class Main {
 		}
 
 		String prettyLine = String.format("%080d", 0).replace('0', '-');
-		new File("output").mkdir();
+
+		File outputDir = new File("output");
+		outputDir.mkdir();
 
 		for (String filename: args) {
 			/* Pretty-print file basename */
@@ -24,10 +26,10 @@ public class Main {
 			System.out.println(prettyLine);
 
 			/* Prepare output filename, ensuring uniqueness */
-			String outname = "output/" + basename.replace(".java", "");
+			String outname = outputDir.getName() + '/' + basename.replace(".java", "");
 			String tail = "";
 			for (int n = 1; Files.exists(Paths.get((outname + tail + ".ll"))); ++n)
-				tail = String.valueOf(n);
+				tail = '-' + String.valueOf(n);
 
 			outname += tail + ".ll";
 
@@ -43,13 +45,13 @@ public class Main {
 				/* Semantic Checking Phase 2: Type checking, using Symbol Table */
 				root.accept(new TypeCheckVisitor(symbols), null);
 
-				/* Print offsets //TODO: Is this needed for part 3 */
-				symbols.printOffsets();
-
 				/* LLVM IR Generation */
 				root.accept(new LLVMVisitor(symbols, output), null);
+				System.out.println("Generated LLVM IR: " + outname);
 
-				System.out.println("\nLLVM IR: " + outname);
+				/* Attempt to helpfully run clang, producing the final executable */
+				if (new ProcessBuilder("clang", "-o " + outname.replace(".ll", ""), outname).inheritIO().start().waitFor() == 0)
+					System.out.println("Successfully compiled LLVM IR to executable");
 			} catch (Exception e) {
 				//DEBUG whole stacktrace
 				//e.printStackTrace();
