@@ -56,7 +56,7 @@ public class Main {
 				//DEBUG whole stacktrace
 				//e.printStackTrace();
 
-				System.err.println("\033[1;31mERROR\033[0m: " + e.getMessage());
+				System.err.println("\033[1;31m" + e.getClass().getSimpleName() + "\033[0m: " + e.getMessage());
 			}
 
 			System.out.println();
