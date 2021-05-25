@@ -16,7 +16,7 @@ public abstract class FieldContainerSymbol extends Symbol {
 
 	@Override
 	public int getSize() {
-		/* Class and Method declarations are pointers in this case */
+		/* Method declarations are pointers in the offset usage case */
 		return 8;
 	}
 

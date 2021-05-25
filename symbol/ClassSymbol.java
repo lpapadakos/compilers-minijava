@@ -33,7 +33,6 @@ public class ClassSymbol extends FieldContainerSymbol {
 		super.addField(field);
 	}
 
-	// TODO overrides should have same offset as overriden funcs?
 	public void addMethod(MethodSymbol method) {
 		/* Essentally, offset is undefined for overrides and static methods */
 		if (!method.isStatic() && !method.isOverride()) {
@@ -41,7 +40,15 @@ public class ClassSymbol extends FieldContainerSymbol {
 			lastMethodOffset += method.getSize();
 		}
 
+		method.setOwner(this);
 		methods.put(method.getName(), method);
+	}
+
+	/* Size of class is essentially the sum of all its fields
+	 (C structs come to mind) */
+	@Override
+	public int getSize() {
+		return lastFieldOffset;
 	}
 
 	/* These getters recurse up the inheritance tree to locate a field or function */
@@ -57,6 +64,8 @@ public class ClassSymbol extends FieldContainerSymbol {
 			return parent.getField(name);
 	}
 
+	//TODO Override getFields with recursive def?
+
 	public MethodSymbol getMethod(String name) {
 		MethodSymbol method = methods.get(name);
 
@@ -69,7 +78,24 @@ public class ClassSymbol extends FieldContainerSymbol {
 	}
 
 	public Collection<MethodSymbol> getMethods() {
+		Map<String, MethodSymbol> allMethods = new LinkedHashMap<>();
+
+		putMethods(allMethods);
 		return methods.values();
+	}
+
+	private void putMethods(Map<String, MethodSymbol> allMethods) {
+		if (parent != null)
+			parent.putMethods(allMethods);
+
+		/* In HashMaps, put() overrides values for existing keys.
+		 * Since overloads don't exist in MiniJava, the functions that
+		 * override parent ones will replace them, at the same position in the map. */
+		allMethods.putAll(methods);
+	}
+
+	public int getMethodsAmount() {
+		return lastMethodOffset / 8; // MethodSymbol size
 	}
 
 	public int getLastFieldOffset() {
@@ -88,21 +114,23 @@ public class ClassSymbol extends FieldContainerSymbol {
 		if (candidate == null)
 			return false;
 
+		/* Can't exactly override (same signature) in the same class, so if the name exists already, it's an error */
+		if (methods.containsKey(candidate.getName()))
+			return true;
+
 		/* This recursively looks up the parent chain */
 		MethodSymbol existing = getMethod(candidate.getName());
 
 		if (existing == null)
 			return false;
 
-		/* Can't exactly override (same signature) in the same class, so if the name exists already, it's an error */
-		if (methods.containsKey(candidate.getName()))
-			return true;
-
 		/* At this point the method was found in a parent class of c.
  		 * Compare signature to see if we're overloading or not. */
 		if (existing.equals(candidate)) {
-			/* Set override flag */
+			/* candidate is overriding a parent method, borrow offset */
 			candidate.setOverride();
+			candidate.setOffset(existing.getOffset());
+
 			return false;
 		} else {
 			return true;

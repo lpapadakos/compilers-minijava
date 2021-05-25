@@ -3,11 +3,16 @@ package symbol;
 import java.util.*;
 
 public class MethodSymbol extends FieldContainerSymbol {
+	private ClassSymbol owner;
 	private boolean override = false;
 	private final Map<String, Symbol> params = new LinkedHashMap<>();
 
 	public MethodSymbol(String returnType, String name) {
 		super(returnType, name);
+	}
+
+	public void setOwner(ClassSymbol owner) {
+		this.owner = owner;
 	}
 
 	public void setOverride() {
@@ -16,6 +21,10 @@ public class MethodSymbol extends FieldContainerSymbol {
 
 	public void addParameter(Symbol param) {
 		params.put(param.getName(), param);
+	}
+
+	public ClassSymbol getOwner() {
+		return owner;
 	}
 
 	public boolean isOverride() {

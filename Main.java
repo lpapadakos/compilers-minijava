@@ -45,12 +45,15 @@ public class Main {
 				/* Semantic Checking Phase 2: Type checking, using Symbol Table */
 				root.accept(new TypeCheckVisitor(symbols), null);
 
+				//DEBUG temp
+				symbols.printOffsets();
+
 				/* LLVM IR Generation */
 				root.accept(new LLVMVisitor(symbols, output), null);
 				System.out.println("Generated LLVM IR: " + outname);
 
 				/* Attempt to helpfully run clang, producing the final executable */
-				if (new ProcessBuilder("clang", "-o " + outname.replace(".ll", ""), outname).inheritIO().start().waitFor() == 0)
+				if (new ProcessBuilder("clang", "-o", outname.replace(".ll", ""), outname).inheritIO().start().waitFor() == 0)
 					System.out.println("Successfully compiled LLVM IR to executable");
 			} catch (Exception e) {
 				//DEBUG whole stacktrace
