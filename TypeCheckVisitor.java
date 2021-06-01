@@ -35,7 +35,7 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 	public String visit(MainClass n, String[] argu) throws Exception {
 		// Names of class and main method (only one method in the main class), so we can include it here
 		String className = n.f1.accept(this, argu);
-		String[] names = new String[] {className, "main"};
+		String[] names = new String[] { className, "main" };
 
 		n.f14.accept(this, names);
 
@@ -58,6 +58,7 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 
 		names[0] = n.f1.accept(this, names);
 
+		// TODO is present() needed?
 		if (n.f3.present())
 			n.f3.accept(this, names);
 
@@ -151,8 +152,8 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 	}
 
 	/**
-	* f0 -> Type()
-	* f1 -> Identifier()
+	 * f0 -> Type()
+	 * f1 -> Identifier()
 	*/
 	@Override
 	public String visit(FormalParameter n, String[] argu) throws Exception {

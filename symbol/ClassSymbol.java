@@ -78,10 +78,14 @@ public class ClassSymbol extends FieldContainerSymbol {
 	}
 
 	public Collection<MethodSymbol> getMethods() {
+		// Optimization: Many classes might not extend some other class. No need to putAll()
+		if (parent == null)
+			return methods.values();
+
 		Map<String, MethodSymbol> allMethods = new LinkedHashMap<>();
 
 		putMethods(allMethods);
-		return methods.values();
+		return allMethods.values();
 	}
 
 	private void putMethods(Map<String, MethodSymbol> allMethods) {

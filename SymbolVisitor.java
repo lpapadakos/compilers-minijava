@@ -191,8 +191,8 @@ public class SymbolVisitor extends GJDepthFirst<String, Symbol> {
 	}
 
 	/**
-	* f0 -> Type()
-	* f1 -> Identifier()
+	 * f0 -> Type()
+	 * f1 -> Identifier()
 	*/
 	@Override
 	public String visit(FormalParameter n, Symbol argu) throws Exception {

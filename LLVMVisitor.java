@@ -18,7 +18,7 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 		private int oob;
 		private int _if;
 		private int loop;
-		private int clause;
+		private int cond;
 
 		public Counters() {
 			reset();
@@ -30,7 +30,7 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 			oob = 0;
 			_if = 0;
 			loop = 0;
-			clause = 0;
+			cond = 0;
 		}
 
 		public String nextRegister() {
@@ -45,7 +45,6 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 			return "oob" + oob++;
 		}
 
-		//TODO else?
 		public String nextIf() {
 			return "if" + _if++;
 		}
@@ -54,8 +53,8 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 			return "loop" + loop++;
 		}
 
-		public String nextClause() {
-			return "clause" + clause++;
+		public String nextCond() {
+			return "cond" + cond++;
 		}
 	};
 
@@ -84,11 +83,6 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 		     "}\n");
 	}
 
-	private void emit(String line) throws Exception {
-		ll.write(line);
-		ll.newLine();
-	}
-
 	private String llType(String miniJavaType) {
 		switch (miniJavaType) {
 			case "boolean":
@@ -103,6 +97,36 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 			default:
 				return "i8*";
 		}
+	}
+
+	private void emit(String line) throws Exception {
+		ll.write(line);
+		ll.newLine();
+	}
+
+	private void emit_vtable(String className) throws Exception {
+		ClassSymbol thisClass = symbols.getClass(className);
+
+		if (thisClass == null)
+			return;
+
+		emit("@" + className + "_vtable = global [" + thisClass.getMethodsAmount() + " x i8*] [");
+
+		StringBuilder methods = new StringBuilder();
+		for (MethodSymbol method: thisClass.getMethods()) {
+			methods.append("\ti8* bitcast (" + llType(method.getType()) + "(i8*");
+
+			for (Symbol parameter: method.getParameters())
+				methods.append(", " + llType(parameter.getType()));
+
+			methods.append(")* @" + method.getOwner().getName() + '.' + method.getName() + " to i8*),\n");
+		}
+
+		/* Delete trailing comma */
+		methods.delete(methods.length() - 2, methods.length());
+
+		emit(methods.toString());
+		emit("]\n");
 	}
 
 	/**
@@ -129,13 +153,13 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 	public String visit(MainClass n, String[] argu) throws Exception {
 		// Names of class and main method (only one method in the main class), so we can include it here
 		String className = n.f1.accept(this, argu);
-		String[] names = new String[] {className, "main"};
+		String[] names = new String[] { className, "main" };
 
 		emit("; Program body\n" +
 		     "define i32 @main() {");
 
-		n.f14.accept(this, names);
-		n.f15.accept(this, names);
+		n.f14.accept(this, names); // Main Method Local Variables
+		n.f15.accept(this, names); // Main Method Body
 
 		emit("\tret i32 0\n" +
 		     "}\n");
@@ -157,36 +181,155 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 
 		names[0] = n.f1.accept(this, names);
 
-		/* V-Table time! */
 		emit("; class " + names[0]);
-		ClassSymbol thisClass = symbols.getClass(names[0]);
+		emit_vtable(names[0]);
 
-		emit("@" + names[0] + ".vtable = global [" + thisClass.getMethodsAmount() + " x i8*] [");
-
-		StringBuffer methods = new StringBuffer();
-		for (MethodSymbol method: thisClass.getMethods()) {
-			methods.append("\ti8* bitcast (" + llType(method.getType()) + "(i8*");
-
-			for (Symbol parameter: method.getParameters())
-				methods.append(", " + llType(parameter.getType()));
-
-			methods.append(")* @" + method.getOwner().getName() + '.' + method.getName() + " to i8*),\n");
-		}
-
-		/* Delete trailing comma */
-		methods.deleteCharAt(methods.length() - 2);
-		emit(methods.toString());
-
-		emit("]");
-
-		// TODO is present() needed?
-		if (n.f3.present())
-			n.f3.accept(this, names);
-
-		if (n.f4.present())
-			n.f4.accept(this, names);
+		n.f4.accept(this, names); // Class Methods
 
 		return null;
+	}
+
+	/**
+	 * f0 -> "class"
+	 * f1 -> Identifier()
+	 * f2 -> "extends"
+	 * f3 -> Identifier()
+	 * f4 -> "{"
+	 * f5 -> ( VarDeclaration() )*
+	 * f6 -> ( MethodDeclaration() )*
+	 * f7 -> "}"
+	*/
+	@Override
+	public String visit(ClassExtendsDeclaration n, String[] argu) throws Exception {
+		String[] names = new String[2];
+
+		names[0] = n.f1.accept(this, names);
+
+		emit("; class " + names[0] + " extends " + n.f3.accept(this, names));
+		emit_vtable(names[0]);
+
+		n.f6.accept(this, names); // Class Methods
+
+		return null;
+	}
+
+	/**
+	 * f0 -> Type()
+	 * f1 -> Identifier()
+	 * f2 -> ";"
+	*/
+	@Override
+	public String visit(VarDeclaration n, String[] argu) throws Exception {
+		String varType = n.f0.accept(this, argu);
+		String varName = n.f1.accept(this, argu);
+
+		emit("\t%" + varName + " = alloca " + llType(varType));
+		emit("\tstore " + llType(varType) + " 0, " + llType(varType) + "* %" + varName);
+
+		return null;
+	}
+
+	/**
+	 * f0 -> "public"
+	 * f1 -> Type()
+	 * f2 -> Identifier()
+	 * f3 -> "("
+	 * f4 -> ( FormalParameterList() )?
+	 * f5 -> ")"
+	 * f6 -> "{"
+	 * f7 -> ( VarDeclaration() )*
+	 * f8 -> ( Statement() )*
+	 * f9 -> "return"
+	 * f10 -> Expression()
+	 * f11 -> ";"
+	 * f12 -> "}"
+	*/
+	@Override
+	public String visit(MethodDeclaration n, String[] argu) throws Exception {
+		/* Declared method return type */
+		String methodType = n.f1.accept(this, argu);
+
+		/* add function name to array passed from Class Declaration */
+		argu[1] = n.f2.accept(this, argu);
+
+		StringBuilder parameters = new StringBuilder("i8* %this");
+		Collection<Symbol> parameterList = symbols.getClass(argu[0]).getMethod(argu[1]).getParameters();
+
+		for (Symbol parameter: parameterList)
+			parameters.append(", " + llType(parameter.getType()) + " %_" + parameter.getName());
+
+		emit("define " + llType(methodType) + " @" + argu[0] + '.' + argu[1] + '(' + parameters + ") {");
+
+		// Allocate space for method parameters
+		if (n.f4.present()) {
+			emit("\t; Parameters (pass by value)");
+			n.f4.accept(this, argu);
+			emit(""); // Cosmetic separation
+		}
+
+		// Allocate space for local method variables
+		if (n.f7.present()) {
+			emit("\t; Local variables (zero-initialized)");
+			n.f7.accept(this, argu);
+			emit(""); // Cosmetic separation
+		}
+
+		// Method body
+		n.f8.accept(this, argu);
+
+		/* Return type and value of final expression */
+		String retExpr = n.f10.accept(this, argu);
+
+		emit("\tret " + retExpr + "\n" +
+		     "}\n");
+
+		counters.reset();
+
+		return null;
+	}
+
+	/**
+	 * f0 -> Type()
+	 * f1 -> Identifier()
+	*/
+	@Override
+	public String visit(FormalParameter n, String[] argu) throws Exception {
+		String paramType = n.f0.accept(this, argu);
+		String paramName = n.f1.accept(this, argu);
+
+		// Pass by value: Copy arguments to local variables
+		emit("\t%" + paramName + " = alloca " + llType(paramType));
+		emit("\tstore " + llType(paramType) + " %_" + paramName + ", " + llType(paramType) + "* %" + paramName);
+
+		return null;
+	}
+
+	// TODO continue here
+
+	/**
+	 * f0 -> "int"
+	 * f1 -> "["
+	 * f2 -> "]"
+	*/
+	@Override
+	public String visit(ArrayType n, String[] argu) throws Exception {
+		return n.f0.toString() + n.f1.toString() + n.f2.toString();
+	}
+
+	/**
+	 * f0 -> "boolean"
+	*/
+	@Override
+	public String visit(BooleanType n, String[] argu) throws Exception {
+		return n.f0.toString();
+	}
+
+	/**
+	 * f0 -> "int"
+	*/
+	@Override
+	public String visit(IntegerType n, String[] argu) throws Exception {
+		return n.f0.toString();
 	}
 
 	/**
