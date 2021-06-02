@@ -18,7 +18,8 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 		private int oob;
 		private int _if;
 		private int loop;
-		private int cond;
+		private int clause;
+		private int exit;
 
 		public Counters() {
 			reset();
@@ -30,31 +31,37 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 			oob = 0;
 			_if = 0;
 			loop = 0;
-			cond = 0;
+			clause = 0;
+			exit = 0;
 		}
 
 		public String nextRegister() {
 			return "%_" + register++;
 		}
 
+		//tODO is alloc label needed?
 		public String nextArray() {
 			return "alloc" + arr_alloc++;
 		}
 
-		public String nextOob() {
-			return "oob" + oob++;
+		public String[] nextOob() {
+			return new String[] { "not_oob" + oob, "oob" + oob++ };
 		}
 
-		public String nextIf() {
-			return "if" + _if++;
+		public String[] nextIf() {
+			return new String[] { "if" + _if, "else" + _if++ };
 		}
 
-		public String nextLoop() {
-			return "loop" + loop++;
+		public String[] nextLoop() {
+			return new String[] { "loop_start" + loop, "loop_body" + loop++ };
 		}
 
-		public String nextCond() {
-			return "cond" + cond++;
+		public String nextClause() {
+			return "clause" + clause++;
+		}
+
+		public String nextExit() {
+			return "exit" + exit++;
 		}
 	};
 
@@ -97,6 +104,17 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 			default:
 				return "i8*";
 		}
+	}
+
+	private String llNull(String miniJavaType) {
+		String llTypeStr = llType(miniJavaType);
+
+		if (llTypeStr.equals("i1"))
+			return "false";
+		else if (llTypeStr.contains("*"))
+			return "null";
+		else
+			return "0";
 	}
 
 	private void emit(String line) throws Exception {
@@ -223,8 +241,12 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 		String varType = n.f0.accept(this, argu);
 		String varName = n.f1.accept(this, argu);
 
-		emit("\t%" + varName + " = alloca " + llType(varType));
-		emit("\tstore " + llType(varType) + " 0, " + llType(varType) + "* %" + varName);
+		String varLlType = llType(varType);
+
+		emit("\t%" + varName + " = alloca " + varLlType);
+
+		// Zero-initialized
+		emit("\tstore " + varLlType + ' ' + llNull(varType) + ", " + varLlType + "* %" + varName);
 
 		return null;
 	}
@@ -297,14 +319,14 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 		String paramType = n.f0.accept(this, argu);
 		String paramName = n.f1.accept(this, argu);
 
+		String paramLlType = llType(paramType);
+
 		// Pass by value: Copy arguments to local variables
-		emit("\t%" + paramName + " = alloca " + llType(paramType));
-		emit("\tstore " + llType(paramType) + " %_" + paramName + ", " + llType(paramType) + "* %" + paramName);
+		emit("\t%" + paramName + " = alloca " + paramLlType);
+ 		emit("\tstore " + paramLlType + " %_" + paramName + ", " + paramLlType + "* %" + paramName);
 
 		return null;
 	}
-
-	// TODO continue here
 
 	/**
 	 * f0 -> "int"
@@ -339,4 +361,316 @@ public class LLVMVisitor extends GJDepthFirst<String, String[]> {
 	public String visit(Identifier n, String[] argu) throws Exception {
 		return n.f0.toString();
 	}
+
+	/* Statement Family */
+
+	/**
+	 * f0 -> Identifier()
+	 * f1 -> "="
+	 * f2 -> Expression()
+	 * f3 -> ";"
+	*/
+	@Override
+	public String visit(AssignmentStatement n, String[] argu) throws Exception {
+		String idName = n.f0.accept(this, argu);
+		String exprRegister = n.f2.accept(this, argu);
+
+		ClassSymbol classSymbol = symbols.getClass(argu[0]);
+		MethodSymbol method = classSymbol.getMethod(argu[1]);
+		Symbol variable;
+
+		if ((variable = method.getParameter(idName)) != null ||
+		    (variable = method.getField(idName)) != null) {
+			emit("\tstore " + exprRegister + ", " + llType(variable.getType()) + "* %" + idName);
+		} else { // We have a class member on our hands: Get field pointer, THEN store.
+			variable = classSymbol.getField(idName);
+
+			String fieldAddr = counters.nextRegister();
+			emit('\t' + fieldAddr + " = getelementptr i8, i8* %this, i32 " + (8 + variable.getOffset()));
+
+			String fieldPointer = counters.nextRegister();
+			emit('\t' + fieldPointer + " = bitcast i8* " + fieldAddr + " to " + llType(variable.getType()) + "*");
+
+			emit("\tstore " + exprRegister + ", " + llType(variable.getType()) + "* " + fieldPointer);
+		}
+
+		return null;
+	}
+
+	/**
+	 * f0 -> Identifier()
+	 * f1 -> "["
+	 * f2 -> Expression()
+	 * f3 -> "]"
+	 * f4 -> "="
+	 * f5 -> Expression()
+	 * f6 -> ";"
+	*/
+	@Override
+	public String visit(ArrayAssignmentStatement n, String[] argu) throws Exception {
+		String idName = n.f0.accept(this, argu);
+		String indexRegister = n.f2.accept(this, argu);
+
+		// Part 1: Acquire pointer to the array
+
+		ClassSymbol classSymbol = symbols.getClass(argu[0]);
+		MethodSymbol method = classSymbol.getMethod(argu[1]);
+		Symbol array;
+
+		String arrayRegister;
+
+		emit("");
+		if ((array = method.getParameter(idName)) != null ||
+		    (array = method.getField(idName)) != null) {
+			//arrayRegister = counters.nextRegister();
+			//TODO are local arrays actually i32**? If not, %idName should do
+			//emit("\t" + arrayRegister + " = load i32*, i32** %" + idName);
+			arrayRegister = '%' + idName;
+		} else { // We have a class member on our hands: Get field pointer, THEN load array pointer.
+			array = classSymbol.getField(idName);
+
+			String fieldAddr = counters.nextRegister();
+			emit('\t' + fieldAddr + " = getelementptr i8, i8* %this, i32 " + (8 + array.getOffset()));
+
+			String arrayPointer = counters.nextRegister();
+			emit('\t' + arrayPointer + " = bitcast i8* " + fieldAddr + " to i32**");
+
+			arrayRegister = counters.nextRegister();
+			emit("\t" + arrayRegister + " = load i32*, i32** " + arrayPointer);
+		}
+
+		// Part 2: Check index compared to array length, if bad throw_oob()
+
+		String arrayLength = counters.nextRegister();
+		// Convention: First "member" of array is actually its length, as an int
+		emit('\t' + arrayLength + " = load i32, i32* " + arrayRegister);
+
+		String oobCheck = counters.nextRegister();
+		emit('\t' + oobCheck + " = icmp ult " + indexRegister + ", " + arrayLength);
+
+		String[] oobLabel = counters.nextOob();
+		emit('\t' + "br i1 " + oobCheck + ", label %" + oobLabel[0] + ", label %" + oobLabel[1]);
+
+		String exitLabel = counters.nextExit();
+
+		// Path 1: Correct indexing -> store
+		emit(oobLabel[0] + ':');
+
+		// Because, as mentioned, the 0th element is the array length, and MiniJava arrays properly start at 0
+		String actualIndex = counters.nextRegister();
+		emit('\t' + actualIndex + " = add " + indexRegister + ", 1");
+
+		String elementPointer = counters.nextRegister();
+		emit('\t' + elementPointer + " = getelementptr i32, i32* " + arrayRegister + ", i32 " + actualIndex);
+
+		String exprRegister = n.f5.accept(this, argu);
+		emit("\tstore " + exprRegister + ", i32* " + elementPointer);
+
+		// Path 2: Ya dun goofed
+		emit(oobLabel[1] + ':');
+		emit("\tcall void @throw_oob()");
+		emit("\tbr label %" + exitLabel + '\n');
+
+		emit(exitLabel + ':');
+
+		return null;
+	}
+
+	/**
+	 * f0 -> "if"
+	 * f1 -> "("
+	 * f2 -> Expression()
+	 * f3 -> ")"
+	 * f4 -> Statement()
+	 * f5 -> "else"
+	 * f6 -> Statement()
+	*/
+	@Override
+	public String visit(IfStatement n, String[] argu) throws Exception {
+		String exprRegister = n.f2.accept(this, argu);
+
+		String[] ifLabel = counters.nextIf();
+		String exitLabel = counters.nextExit();
+		emit("\tbr " + exprRegister + ", label %" + ifLabel[0] + ", label %" + ifLabel[1]);
+
+		// if
+		emit(ifLabel[0] + ':');
+		n.f4.accept(this, argu);
+		emit("\tbr label %" + exitLabel);
+
+		// else
+		emit(ifLabel[1] + ':');
+		n.f6.accept(this, argu);
+		emit("\tbr label %" + exitLabel);
+
+		emit(exitLabel + ':');
+
+		return null;
+	}
+
+	/**
+	 * f0 -> "while"
+	 * f1 -> "("
+	 * f2 -> Expression()
+	 * f3 -> ")"
+	 * f4 -> Statement()
+	*/
+	@Override
+	public String visit(WhileStatement n, String[] argu) throws Exception {
+		String whileLabel[] = counters.nextLoop();
+		String exitLabel = counters.nextExit();
+
+		// Previous basic block must end with branch
+		emit("\tbr label %" + whileLabel[0] + '\n');
+
+		// Loop condition
+		emit(whileLabel[0] + ':');
+		String exprRegister = n.f2.accept(this, argu);
+		emit("\tbr " + exprRegister + ", label %" + whileLabel[1] + ", label %" + exitLabel);
+
+		// Loop body
+		emit(whileLabel[1] + ':');
+		n.f4.accept(this, argu);
+		emit("\tbr label %" + whileLabel[0]);
+
+		emit(exitLabel + ':');
+
+		return null;
+	}
+
+	/**
+	 * f0 -> "System.out.println"
+	 * f1 -> "("
+	 * f2 -> Expression()
+	 * f3 -> ")"
+	 * f4 -> ";"
+	*/
+	@Override
+	public String visit(PrintStatement n, String[] argu) throws Exception {
+		String expRegister = n.f2.accept(this, argu);
+
+		emit("\tcall void (i32) @print_int(" + expRegister + ')');
+
+		return null;
+	}
+
+	/* Expression Family */
+
+	/**
+	 * f0 -> Clause()
+	 * f1 -> "&&"
+	 * f2 -> Clause()
+	*/
+	@Override
+	public String visit(AndExpression n, String[] argu) throws Exception {
+		String[] exprRegister = new String[2];
+		String[] clauseLabel = new String[] { counters.nextClause(), counters.nextClause() };
+		String exitLabel = counters.nextExit();
+
+		// Previous basic block must end with branch
+		emit("\tbr label %" + clauseLabel[0]);
+
+		emit(clauseLabel[0] + ':');
+		exprRegister[0] = n.f0.accept(this, argu);
+		emit("\tbr " + exprRegister[0] + ", label %" + clauseLabel[1] + ", label %" + exitLabel);
+
+		emit(clauseLabel[1] + ':');
+		exprRegister[1] = n.f2.accept(this, argu);
+		emit("\tbr label %" + exitLabel);
+
+		emit(exitLabel + ':');
+		String resultRegister = counters.nextRegister();
+ 		emit("\t" + resultRegister + " = phi i1 [ 0, %" + clauseLabel[0] + " ], [ " + exprRegister[1].split(" ")[1] + ", %" + clauseLabel[1] + " ]");
+
+		return "i1 " + resultRegister;
+	}
+
+	/**
+	 * f0 -> PrimaryExpression()
+	 * f1 -> "<"
+	 * f2 -> PrimaryExpression()
+	*/
+	@Override
+	public String visit(CompareExpression n, String[] argu) throws Exception {
+		String[] exprRegister = new String[2];
+
+		exprRegister[0] = n.f0.accept(this, argu);
+		exprRegister[1] = n.f2.accept(this, argu).split(" ")[1]; // only need reg name
+
+		String cmpResult = counters.nextRegister();
+		emit("\t" + cmpResult + " = icmp slt " + exprRegister[0] + ", " + exprRegister[1]);
+
+		return "i1 " + cmpResult;
+	}
+
+	/**
+	 * f0 -> PrimaryExpression()
+	 * f1 -> "+"
+	 * f2 -> PrimaryExpression()
+	*/
+	@Override
+	public String visit(PlusExpression n, String[] argu) throws Exception {
+		String[] exprRegister = new String[2];
+
+		exprRegister[0] = n.f0.accept(this, argu);
+		exprRegister[1] = n.f2.accept(this, argu).split(" ")[1]; // only need reg name
+
+		String addResult = counters.nextRegister();
+		emit("\t" + addResult + " = add " + exprRegister[0] + ", " + exprRegister[1]);
+
+		return "i32 " + addResult;
+	}
+
+	/**
+	 * f0 -> PrimaryExpression()
+	 * f1 -> "-"
+	 * f2 -> PrimaryExpression()
+	*/
+	@Override
+	public String visit(MinusExpression n, String[] argu) throws Exception {
+		String[] exprRegister = new String[2];
+
+		exprRegister[0] = n.f0.accept(this, argu);
+		exprRegister[1] = n.f2.accept(this, argu).split(" ")[1]; // only need reg name
+
+		String subResult = counters.nextRegister();
+		emit("\t" + subResult + " = sub " + exprRegister[0] + ", " + exprRegister[1]);
+
+		return "i32 " + subResult;
+	}
+
+	/**
+	 * f0 -> PrimaryExpression()
+	 * f1 -> "*"
+	 * f2 -> PrimaryExpression()
+	*/
+	@Override
+	public String visit(TimesExpression n, String[] argu) throws Exception {
+		String[] exprRegister = new String[2];
+
+		exprRegister[0] = n.f0.accept(this, argu);
+		exprRegister[1] = n.f2.accept(this, argu).split(" ")[1]; // only need reg name
+
+		String mulResult = counters.nextRegister();
+		emit("\t" + mulResult + " = mul " + exprRegister[0] + ", " + exprRegister[1]);
+
+		return "i32 " + mulResult;
+	}
+
+	/**
+	 * f0 -> PrimaryExpression()
+	 * f1 -> "["
+	 * f2 -> PrimaryExpression()
+	 * f3 -> "]"
+	*/
+	@Override
+	public String visit(ArrayLookup n, String[] argu) throws Exception {
+		String arrayRegister = n.f0.accept(this, argu);
+		String indexRegister = n.f2.accept(this, argu);
+
+
+		return "i32 array_TODO";
+	}
+
+	// TODO continue here
 }
