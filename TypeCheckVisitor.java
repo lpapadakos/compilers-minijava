@@ -58,12 +58,8 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 
 		names[0] = n.f1.accept(this, names);
 
-		// TODO is present() needed?
-		if (n.f3.present())
-			n.f3.accept(this, names);
-
-		if (n.f4.present())
-			n.f4.accept(this, names);
+		n.f3.accept(this, names);
+		n.f4.accept(this, names);
 
 		return null;
 	}
@@ -84,11 +80,8 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 
 		names[0] = n.f1.accept(this, names);
 
-		if (n.f5.present())
-			n.f5.accept(this, names);
-
-		if (n.f6.present())
-			n.f6.accept(this, names);
+		n.f5.accept(this, names);
+		n.f6.accept(this, names);
 
 		return null;
 	}
@@ -132,14 +125,10 @@ public class TypeCheckVisitor extends GJDepthFirst<String, String[]> {
 		/* add function name to array passed from Class Declaration */
 		argu[1] = n.f2.accept(this, argu);
 
-		if (n.f4.present())
-			n.f4.accept(this, argu);
+		n.f4.accept(this, argu); // Method parameters
+		n.f7.accept(this, argu); // Method variables
 
-		if (n.f7.present())
-			n.f7.accept(this, argu);
-
-		if (n.f8.present())
-			n.f8.accept(this, argu);
+		n.f8.accept(this, argu); // Method body
 
 		/* Return type of final expression */
 		String exprType = n.f10.accept(this, argu);
