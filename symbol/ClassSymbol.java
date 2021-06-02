@@ -8,21 +8,19 @@ public class ClassSymbol extends FieldContainerSymbol {
 	private int lastFieldOffset = 0;
 	private int lastMethodOffset = 0;
 
-	// ClassExtendsDeclaration
-	public ClassSymbol(String name, ClassSymbol parent) throws Exception {
-		super("class", name);
-		this.parent = parent;
-
-		if (parent != null) {
-			/* Resume counters from parent class */
-			lastFieldOffset = parent.getLastFieldOffset();
-			lastMethodOffset = parent.getLastMethodOffset();
-		}
-	}
-
 	// ClassDeclaration
 	public ClassSymbol(String name) throws Exception {
-		this(name, null);
+		super("class", name);
+	}
+
+	// ClassExtendsDeclaration
+	public ClassSymbol(String name, ClassSymbol parent) throws Exception {
+		this(name);
+		this.parent = parent;
+
+		/* Resume counters from parent class */
+		lastFieldOffset = parent.getLastFieldOffset();
+		lastMethodOffset = parent.getLastMethodOffset();
 	}
 
 	@Override
@@ -64,7 +62,26 @@ public class ClassSymbol extends FieldContainerSymbol {
 			return parent.getField(name);
 	}
 
-	//TODO Override getFields with recursive def?
+	@Override
+	public Collection<Symbol> getFields() {
+		// Optimization: Many classes might not extend some other class. No need to putAll()
+		if (parent == null)
+			return super.getFields();
+
+		Map<String, Symbol> allFields = new LinkedHashMap<>();
+
+		putFields(allFields);
+		return allFields.values();
+	}
+
+	private void putFields(Map<String, Symbol> allFields) {
+		if (parent != null)
+			parent.putFields(allFields);
+
+		/* In HashMaps, put() overrides values for existing keys.
+		 * The subclasses fields shadow the parent ones, in the case of a name conflict */
+		allFields.putAll(fields);
+	}
 
 	public MethodSymbol getMethod(String name) {
 		MethodSymbol method = methods.get(name);
@@ -118,17 +135,17 @@ public class ClassSymbol extends FieldContainerSymbol {
 		if (candidate == null)
 			return false;
 
-		/* Can't exactly override (same signature) in the same class, so if the name exists already, it's an error */
-		if (methods.containsKey(candidate.getName()))
-			return true;
-
 		/* This recursively looks up the parent chain */
 		MethodSymbol existing = getMethod(candidate.getName());
 
 		if (existing == null)
 			return false;
 
-		/* At this point the method was found in a parent class of c.
+		/* Can't exactly override (same signature) in the same class, so if the name exists already, it's an error */
+		if (existing.getOwner() == this)
+			return true;
+
+		/* At this point the method was found in a parent class.
  		 * Compare signature to see if we're overloading or not. */
 		if (existing.equals(candidate)) {
 			/* candidate is overriding a parent method, borrow offset */
@@ -144,14 +161,14 @@ public class ClassSymbol extends FieldContainerSymbol {
 	public boolean isSubclassOf(ClassSymbol ancestor) {
 		if (parent == null)
 			return false;
-		else if (parent.equals(ancestor))
+		else if (parent == ancestor)
 			return true;
 		else
 			return parent.isSubclassOf(ancestor);
 	}
 
 	public void printOffsets() {
-		for (Symbol field: getFields())
+		for (Symbol field: super.getFields())
 			System.out.println(getName() + '.' + field.getName() + " : " + field.getOffset());
 
 		for (MethodSymbol method: methods.values()) {

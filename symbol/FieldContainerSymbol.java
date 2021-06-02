@@ -4,7 +4,7 @@ import java.util.*;
 
 /* Abstract class to cover constructs that can contain fields (e.g. Class, Method)*/
 public abstract class FieldContainerSymbol extends Symbol {
-	private final Map<String, Symbol> fields = new LinkedHashMap<>();
+	protected final Map<String, Symbol> fields = new LinkedHashMap<>();
 
 	public FieldContainerSymbol(String type, String name) {
 		super(type, name);
