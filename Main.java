@@ -54,7 +54,7 @@ public class Main {
 
 				/* Attempt to helpfully run clang, producing the final executable */
 				output.flush();
-				if (new ProcessBuilder("clang", "-o", outname.replace(".ll", ""), outname).inheritIO().start().waitFor() == 0)
+				if (new ProcessBuilder("clang", "-Wno-override-module", "-o", outname.replace(".ll", ""), outname).inheritIO().start().waitFor() == 0)
 					System.out.println("Successfully compiled LLVM IR to executable");
 			} catch (Exception e) {
 				//DEBUG whole stacktrace
