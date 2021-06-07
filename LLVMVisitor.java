@@ -57,7 +57,6 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 		private int register;
 
 		/* Labels */
-		private int arr_alloc;
 		private int oob;
 		private int _if;
 		private int loop;
@@ -70,7 +69,6 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 
 		public void reset() {
 			register = 0;
-			arr_alloc = 0;
 			oob = 0;
 			_if = 0;
 			loop = 0;
@@ -80,11 +78,6 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 
 		public String nextRegister() {
 			return "%_" + register++;
-		}
-
-		//tODO is alloc label needed?
-		public String nextArray() {
-			return "alloc" + arr_alloc++;
 		}
 
 		public String[] nextOob() {
@@ -175,6 +168,9 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 
 		StringBuilder methods = new StringBuilder();
 		for (MethodSymbol method: thisClass.getMethods()) {
+			if (method.isStatic())
+				continue;
+
 			methods.append("\ti8* bitcast (" + llType(method.getType()) + "(i8*");
 
 			for (Symbol parameter: method.getParameters())
@@ -184,7 +180,8 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 		}
 
 		/* Delete trailing comma */
-		methods.delete(methods.length() - 2, methods.length());
+		if (methods.length() >= 2)
+			methods.delete(methods.length() - 2, methods.length());
 
 		emit(methods.toString());
 		emit("]\n");
@@ -513,7 +510,7 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 		// Path 2: Ya dun goofed
 		emit(oobLabel[1] + ':');
 		emit("\tcall void @throw_oob()");
-		emit("\tbr label %" + exitLabel + '\n');
+		emit("\tunreachable\n");
 
 		emit(exitLabel + ':');
 
@@ -610,21 +607,28 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 		String[] exprRegister = new String[2];
 		String[] clauseLabel = new String[] { counters.nextClause(), counters.nextClause() };
 		String exitLabel = counters.nextExit();
+		String helperLabel = counters.nextExit().replaceFirst("exit", "temp");
+
+		exprRegister[0] = n.f0.accept(this, argu);
 
 		// Previous basic block must end with branch
 		emit("\tbr label %" + clauseLabel[0]);
 
 		emit(clauseLabel[0] + ':');
-		exprRegister[0] = n.f0.accept(this, argu);
 		emit("\tbr " + exprRegister[0] + ", label %" + clauseLabel[1] + ", label %" + exitLabel);
 
 		emit(clauseLabel[1] + ':');
 		exprRegister[1] = n.f2.accept(this, argu);
+		emit("\tbr label %" + helperLabel + '\n');
+
+		// This fixes error with AND nesting.
+		// phi needs to check BBs that directly jumped to it
+		emit(helperLabel + ':');
 		emit("\tbr label %" + exitLabel + '\n');
 
 		emit(exitLabel + ':');
 		String resultRegister = counters.nextRegister();
- 		emit('\t' + resultRegister + " = phi i1 [ 0, %" + clauseLabel[0] + " ], [ " + exprRegister[1].split(" ")[1] + ", %" + clauseLabel[1] + " ]");
+ 		emit('\t' + resultRegister + " = phi i1 [ false, %" + clauseLabel[0] + " ], [ " + exprRegister[1].split(" ")[1] + ", %" + helperLabel + " ]");
 
 		return "i1 " + resultRegister;
 	}
@@ -743,7 +747,7 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 		// Path 2: Ya dun goofed
 		emit(oobLabel[1] + ':');
 		emit("\tcall void @throw_oob()");
-		emit("\tbr label %" + exitLabel + '\n');
+		emit("\tunreachable\n");
 
 		emit(exitLabel + ':');
 
@@ -905,7 +909,7 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 	*/
 	@Override
 	public String visit(TrueLiteral n, Session argu) throws Exception {
-		return "i1 1";
+		return "i1 true";
 	}
 
 	/**
@@ -913,7 +917,7 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 	*/
 	@Override
 	public String visit(FalseLiteral n, Session argu) throws Exception {
-		return "i1 0";
+		return "i1 false";
 	}
 
 	/**
@@ -954,7 +958,6 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 		String arrayAddr = counters.nextRegister();
 		emit('\t' + arrayAddr + " = call i8* @calloc(i32 4, i32 " + actualLength + ")");
 
-		//TODO make names consistent
 		String arrayPointer = counters.nextRegister();
 		emit('\t' + arrayPointer + " = bitcast i8* " + arrayAddr + " to i32*");
 
@@ -965,7 +968,7 @@ public class LLVMVisitor extends GJDepthFirst<String, Session> {
 		// Path 2: Ya dun goofed
 		emit(oobLabel[1] + ':');
 		emit("\tcall void @throw_oob()");
-		emit("\tbr label %" + exitLabel + '\n');
+		emit("\tunreachable\n");
 
 		emit(exitLabel + ':');
 
