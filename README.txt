@@ -21,3 +21,7 @@ $ make clean
 Makefile (στη ρίζα του project δηλαδή)
 
 * Το clang τρέχει αυτόματα. Yay
+
+* Το πρόγραμμα δεν κάνει overwrite τα .ll που υπάρχουν ήδη στο output/, ώστε να καλύπτεται η περίπτωση
+java Main folder1/SomeFile.java folder2/SomeFile.java
+Αυτή η συμπεριφορά μπορεί να απενεργοποιηθεί σχολιάζοντας τις γραμμές 31 και 31 του Main.java
