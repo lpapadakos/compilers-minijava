@@ -16,22 +16,14 @@ public class Main {
 
 		String prettyLine = String.format("%080d", 0).replace('0', '-');
 
-		File outputDir = new File("output");
-		outputDir.mkdir();
-
 		for (String filename: args) {
 			/* Pretty-print file basename */
 			String basename = filename.substring(filename.lastIndexOf('/') + 1);
 			System.out.println(basename);
 			System.out.println(prettyLine);
 
-			/* Prepare output filename, ensuring uniqueness */
-			String outname = outputDir.getName() + '/' + basename.replace(".java", "");
-			String tail = "";
-			for (int n = 1; Files.exists(Paths.get((outname + tail + ".ll"))); ++n)
-				tail = '-' + String.valueOf(n);
-
-			outname += tail + ".ll";
+			/* Prepare output filename */
+			String outname = filename.replace(".java", ".ll");
 
 			try (FileInputStream input = new FileInputStream(filename);
 			     BufferedWriter output = new BufferedWriter(new FileWriter(outname))) {
@@ -51,11 +43,6 @@ public class Main {
 				/* LLVM IR Generation */
 				root.accept(new LLVMVisitor(symbols, output), null);
 				System.out.println("Generated LLVM IR: " + outname);
-
-				/* Attempt to helpfully run clang, producing the final executable */
-				output.flush();
-				if (new ProcessBuilder("clang", "-Wno-override-module", "-o", outname.replace(".ll", ""), outname).inheritIO().start().waitFor() == 0)
-					System.out.println("Successfully compiled LLVM IR to executable");
 			} catch (Exception e) {
 				//DEBUG whole stacktrace
 				//e.printStackTrace();

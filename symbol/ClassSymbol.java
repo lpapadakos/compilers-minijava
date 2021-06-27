@@ -32,7 +32,7 @@ public class ClassSymbol extends FieldContainerSymbol {
 	}
 
 	public void addMethod(MethodSymbol method) {
-		/* Essentally, offset is undefined for overrides and static methods */
+		/* Essentally, offset is undefined for static methods */
 		if (!method.isStatic() && !method.isOverride()) {
 			method.setOffset(lastMethodOffset);
 			lastMethodOffset += method.getSize();
